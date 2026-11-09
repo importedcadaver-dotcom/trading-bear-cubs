@@ -1,0 +1,35 @@
+name: v5.1 gameplay reliability CI
+
+on:
+  push:
+    branches: [feature/v5.1-gameplay-reliability]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gameplay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install open-source browser QA tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright pytest hypothesis
+          python -m playwright install --with-deps chromium
+      - name: Run real-origin gameplay regression
+        run: python tests/reliability_v51.py
+      - name: Upload screenshot and interaction trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v51-playtest-${{ github.run_id }}
+          path: test-results/v51/
+          if-no-files-found: warn
+          retention-days: 7
