@@ -29,7 +29,7 @@ def write_zip(name, entries):
 manifest = []
 for version in range(1, 6):
     version_id = f"v{version}"
-    game = ROOT / ("index.html" if version == 5 else f"versions/{version_id}/index.html")
+    game = ROOT / f"versions/{version_id}/index.html"
     if not game.exists():
         print(f"Missing {game}; skipping")
         continue
@@ -41,6 +41,15 @@ for version in range(1, 6):
     if version >= 4 and canon.is_file():
         entries.append((canon, Path("docs") / "canon" / canon.name))
     manifest.append(write_zip(f"Little_Trading_Post_{version_id}.zip", entries))
+
+# The root game is v5.1+, distinct from the archived original v5 source.
+vfile = ROOT / "VERSION"
+if vfile.is_file():
+    current = vfile.read_text(encoding="utf-8").strip()
+    if current and (ROOT / "index.html").is_file():
+        manifest.append(write_zip(f"Little_Trading_Post_v{current}.zip",
+            [(ROOT / "index.html", Path("index.html")),
+             (ROOT / "README.md", Path("README.md"))]))
 
 selected = []
 excluded_dirs = {".git", "archives", "__pycache__", ".venv", "node_modules"}

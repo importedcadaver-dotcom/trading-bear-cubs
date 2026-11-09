@@ -1,0 +1,27 @@
+name: Gameplay bug
+description: Report an observable in-game malfunction
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide exact scene, cub, inventory, actions and result.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected versus actual
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Game version
+      placeholder: v5.1.0
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots, trace, browser errors and save context
