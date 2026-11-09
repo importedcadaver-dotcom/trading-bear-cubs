@@ -28,7 +28,7 @@ This file is an honest transfer manifest for moving The Little Trading Post from
 - **Exact prior test scripts:** Historical result reports are preserved; only tests available in the repository or expressly regenerated can be rerun. A current, portable `tests/smoke_v5.py` exists. Do not claim that all older private test programs have been recovered.
 - **Original full conversation:** `docs/PROJECT_HISTORY.md` and `docs/briefs/` preserve project-relevant history and key prompts, but are **not** a literal export of every chat turn, private reasoning, or inaccessible conversation metadata.
 - **Personal browser saves:** Saved progress lives in each browser's storage and was not available to migrate. The repository does not contain the user's personal save data.
-- **Official GitHub Pages hosting:** A deploy workflow exists; GitHub Pages still requires the owner to enable **Settings → Pages → GitHub Actions** once. Until then, run the downloaded `index.html` locally.
+- **Official GitHub Pages hosting:** GitHub Pages is enabled; [the deployment workflow succeeded on its second attempt](https://github.com/importedcadaver-dotcom/trading-bear-cubs/actions/runs/42574555488). Published site: https://importedcadaver-dotcom.github.io/trading-bear-cubs/. Independent external page rendering was not verified in the assistant's website viewer.
 - **Public visibility:** The repository is public. The project-specific prompts, code, and fictional substance lore uploaded here can be viewed by anyone with the link.
 
 ## Download and play
