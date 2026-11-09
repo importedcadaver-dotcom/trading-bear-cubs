@@ -1,0 +1,28 @@
+name: Verify playable v5 game
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "tests/**"
+      - ".github/workflows/smoke-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install browser test tooling
+        run: |
+          pip install playwright
+          python -m playwright install chromium
+      - name: Launch game and check core state
+        run: python tests/smoke_v5.py
