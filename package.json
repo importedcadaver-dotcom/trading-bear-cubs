@@ -12,7 +12,7 @@
     "test:browser": "python tests/reliability_v51.py"
   },
   "devDependencies": {
-    "vite": "7.0.0",
+    "vite": "8.3.6",
     "vitest": "3.2.0"
   }
 }
