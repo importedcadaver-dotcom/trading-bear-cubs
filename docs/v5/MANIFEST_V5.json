@@ -1,0 +1,14 @@
+{
+  "release": "5.0.0",
+  "checks_passed": 59,
+  "checks_total": 59,
+  "distinct_item_ids": 63,
+  "browser_test_context": "playwright chromium page.set_content",
+  "origin_save_migration_verified": false,
+  "screenshots": [
+    "v5-title.png", "v5-creator.png", "v5-den.png", "v5-clearing.png",
+    "v5-barter.png", "v5-panda-trade.png", "v5-newborn-den.png",
+    "v5-mobile-title.png", "v5-mobile-game.png"
+  ],
+  "source_sha256": "210415901ee424699afe7e72f7aa657e86d615fd1e33f18a5c240bef66afd839"
+}
