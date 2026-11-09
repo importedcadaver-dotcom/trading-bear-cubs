@@ -1,0 +1,791 @@
+# THE LITTLE TRADING POST v4
+
+## THE LIVING WOODLAND UPDATE — GAMEPLAY POLISH, CHARACTER CREATION, ACTIVE WORLD, DEEPER RELATIONSHIPS & COMPLETE QA
+
+### 0. MISSION
+
+Continue developing the existing playable browser game, **The Little Trading Post v3**.
+
+You are the project's game director, gameplay programmer, technical artist, UX designer, simulation engineer, narrative designer and QA lead.
+
+**Your primary mission is to make the existing game genuinely enjoyable, clear, responsive, polished and coherent.**
+
+Do not replace it with a mockup. Do not rebuild it unnecessarily. Do not spend the entire assignment planning.
+
+Use the supplied v3 ZIP as the actual project baseline.
+
+Read these files completely before making changes:
+
+- `index.html`
+- `ITEM_CATALOG.md` and `ITEM_CATALOG.csv`
+- `AUDIT.md`
+- `DEPENDENCIES.md`
+- `RESEARCH.md`
+- `DROP_WEIGHTS.md`
+- `ITEM_DROP_RATES.csv`
+- Existing test files and previous versions where available
+- `Bear_Drugs_Encyclopedia_Edition_1.0_FROZEN(1).md`
+
+Preserve the frozen substance encyclopedia's canon and distinguish game-specific additions from approved lore.
+
+You have authorization to research, implement, refactor, test, debug, playtest and deliver the updated game without routine approval questions.
+
+Prioritize existing feature quality over raw feature quantity.
+
+---
+
+# 1. START WITH A REAL DESIGN AND TECHNICAL AUDIT
+
+My playtest feedback: **the game is decent, but it still isn't sufficiently clear or fun.**
+
+Find out exactly why.
+
+Audit the game from four perspectives:
+
+1. First-time player with no knowledge of its mechanics.
+2. Returning player who understands trading.
+3. Player deliberately attempting to exploit the simulation.
+4. Technical reviewer examining state, code, rendering and save integrity.
+
+Audit all player-facing buttons, scenes, interactions, menus and systems.
+
+For each feature, record:
+
+- What is supposed to happen.
+- What actually happens.
+- Whether the player understands the result.
+- Whether the action is enjoyable or repetitive.
+- Whether its consequences affect other systems.
+- Whether it is implemented, partial, broken or missing.
+- What concrete improvement should be made.
+
+**Do not confuse working buttons with good game design.**
+
+Produce a prioritized issue ledger and use it to drive implementation.
+
+Also compare all previous user-requested features from v1, v2 and v3 against the delivered game. Identify omissions, incomplete mechanics, contradictions, temporary implementations and features that were replaced or silently lost.
+
+---
+
+# 2. PROPER MAIN MENU AND CHARACTER CREATOR
+
+Add a polished main menu matching the game's woodland pixel-art style.
+
+Required menu options:
+
+**New Game · Continue · Load Game · Settings · How to Play · Credits · Quit/Close**
+
+Use appropriate browser behavior where a traditional desktop Quit action is unavailable.
+
+The menu should have an animated woodland scene and a recognizable baby brown bear, not just a plain HTML form.
+
+## Character creator
+
+A new game opens a character creator.
+
+Allow customization of:
+
+- Cub's name.
+- Gender
+- Brown bear coat color and markings.
+- Face and eye details.
+- Optional accessory.
+- Starting personality flavor if it meaningfully affects interactions.
+
+Maintain the established 11-month-old starting age.
+
+Pebble and Fern remain biological littermates, with Pebble receiving a particularly developed sibling storyline.
+
+NPC dialogue must use the chosen name and pronouns correctly.
+
+Add a preview of the customized bear and test that all choices survive saving, reloading and game over.
+
+Do not silently alter NPC identities or biological family relationships.
+
+---
+
+# 3. REPLACE THE CURRENT ONBOARDING WITH A PLAYABLE TUTORIAL
+
+The current game exposes too many systems before the player understands what to do.
+
+Create a **guided first morning** that teaches through actual gameplay.
+
+Suggested opening:
+
+1. Wake up inside Mama's Den.
+2. Learn keyboard movement by walking to Mama.
+3. Interact with Mama and eat breakfast.
+4. Talk to Pebble and experience a short sibling interaction.
+5. Leave the den and follow a visible trail.
+6. Collect a useful item directly from the environment.
+7. Arrive at the trading post.
+8. Learn inventory and item actions.
+9. Make a meaningful first barter.
+10. Discover that another cub has an item Pebble wants.
+
+Keep exactly three berries and one very nice stick as the original starting possessions unless explicitly distinguishing food received during the tutorial.
+
+Tutorial objectives should be visible but unobtrusive.
+
+Allow skipping, replaying or disabling guidance.
+
+The tutorial must teach a real system, not merely display instructions.
+
+Use contextual help that appears when needed.
+
+---
+
+# 4. COMPLETE UI/UX AND MENU REORGANIZATION
+
+The current interface has accumulated too many prominent tabs and actions across development versions.
+
+Audit every menu and panel.
+
+Identify which controls should be:
+
+- Permanently visible.
+- Contextual to the selected object or character.
+- Inside inventory.
+- Inside the journal.
+- Inside the pause menu.
+- Hidden under advanced settings.
+- Exclusively part of the developer menu.
+- Removed as redundant or outdated.
+
+**The world should be the main interface.**
+
+Suggested hierarchy:
+
+### Main gameplay HUD
+
+Large world viewport, current location/time, essential needs, contextual interaction prompt, selected item and compact hotbar.
+
+### Context panels
+
+Appear only when relevant: trade with a nearby cub, speak to Mama, inspect an object, operate your post, build something.
+
+### Journal
+
+Relationships, discovered preferences, item encyclopedia, quests, map discoveries, event history.
+
+### Pause menu
+
+Resume, Save, Load, Settings, Tutorial, Controls, Main Menu.
+
+### Developer menu
+
+All cheats, debug information, force-event controls and internal simulation tools.
+
+Do not permanently show eight competing tabs just because they already exist.
+
+Improve information hierarchy, font sizes, pixel-art consistency, contrast, spacing, tooltips and contextual labels.
+
+Test at 1440×900 desktop and 390×844 mobile.
+
+Inventory must remain accessible without unnecessary page scrolling.
+
+---
+
+# 5. KEYBOARD MOVEMENT AND CHARACTER ANIMATION
+
+Replace the present keypress-stepping movement with real continuous movement.
+
+Required controls:
+
+- WASD and arrow keys: movement.
+- E: interact with nearest relevant object or character.
+- Shift: optional faster movement.
+- I: backpack.
+- M: map.
+- Tab: journal or appropriate quick-access interface.
+- Escape: pause/back.
+
+Support click-to-move as an alternative.
+
+Implement collision, walkable regions, movement speed, facing direction, object interaction range and scene exits.
+
+## Movement style
+
+Research charming 2D cutout/puppet-style animation and the squash-and-wobble movement associated with South Park-style construction-paper animation.
+
+Create an **original bear-specific version** of that animation principle.
+
+Do not copy copyrighted character designs.
+
+Add subtle:
+
+- Body bobbing.
+- Side-to-side wobble.
+- Ear bounce.
+- Paw movement.
+- Head turns.
+- Acceleration and stopping animations.
+- Carrying poses.
+- Sitting and lying down.
+- Swimming and struggling motions.
+- Excited and frightened reactions.
+
+Characters should remain recognizably bear-like, not become dog-shaped.
+
+Preserve visual clarity when multiple cubs overlap.
+
+---
+
+# 6. MAKE THE WORLD'S INTERACTABLES OBVIOUS
+
+Currently, finding items and interacting with the environment feel vague.
+
+Audit each clickable world object.
+
+Implement a consistent interaction-feedback system.
+
+For example, when approaching a berry bush:
+
+- The bush becomes subtly highlighted.
+- A label appears: **Berry Bush — E: Gather**.
+- The cub reaches toward the bush.
+- The bush visibly changes.
+- A berry sprite moves toward the inventory.
+- A sound confirms success.
+- A small notification identifies what was acquired.
+- The event appears in the history log.
+
+Use comparable behavior for fishing, collecting stones, opening containers, building, hiding possessions, talking, eating and trading.
+
+Failed actions should explain why:
+
+"Too far away," "Already picked clean," "Need fishing pole," "Pebble isn't home," etc.
+
+Use modest, readable animations rather than overwhelming particle effects.
+
+Make sure notifications do not obscure the character or scene.
+
+Add optional reduced-motion and quiet-feedback settings.
+
+---
+
+# 7. AUDIT AND FIX ALL 58 EXISTING ITEMS
+
+Use the actual catalog and source code. Do not invent claims of existing functionality.
+
+For every item, determine:
+
+- Its unique gameplay purpose.
+- How it is acquired.
+- Whether it is actually obtainable through normal gameplay.
+- Its visual identity.
+- Which actions work.
+- Whether its action is merely a generic text response.
+- Crafting/building dependencies.
+- NPC preferences.
+- Whether it changes world state.
+- Whether it can have personal history or sentimental value.
+- Whether it is redundant.
+- Whether to keep, improve, merge or remove it.
+
+Prioritize weak items such as the human key, train ticket, postcard, wooden die, brass bell, forest map, mini birdhouse, hollow-log drum and star sticker.
+
+Audit the reachability of acorn biscuits, wooden dice, drums, maps, bells and blue feathers in the actual weighted generation and recipe system.
+
+Implement distinctive mechanics instead of more generic "Play" or "Display" buttons.
+
+Examples: boat racing, marbles, dice games, pottery, usable maps, birdhouse encounters, repaired artifacts, fishing, decorating and wearable crafts.
+
+Introduce unique item instances for important treasures, including sentimental attachment, ownership history, special markings, condition and evidence of theft.
+
+Maintain the six-tier rarity economy while auditing whether each item's assigned rarity makes sense.
+
+**Do not expand the catalog just to increase its size.**
+
+---
+
+# 8. DEEP RELATIONSHIP SYSTEM OVERHAUL
+
+Audit the existing relationship scores, NPC memories, sibling mechanics and social interactions.
+
+Identify shallow or abusable mechanics.
+
+Replace simple "button = friendship points" behavior with persistent contextual relationships.
+
+Distinguish:
+
+- Trust.
+- Affection.
+- Familiarity.
+- Fear.
+- Respect.
+- Jealousy.
+- Rivalry.
+- Obligation or favors owed.
+- Family loyalty.
+- Resentment.
+
+Not every character needs every dimension, but the model must be internally coherent.
+
+NPCs should remember meaningful experiences, not every trivial click as an equally important memory.
+
+Create context-dependent dialogue.
+
+A cub who was bullied yesterday should behave differently today.
+
+A cub who envies an item may ask to see it, bargain for it, try to acquire another, or complain.
+
+A cub who receives repeated generous gifts should not automatically become permanently loyal.
+
+**Social and item interactions must enforce physical proximity and real inventory ownership.** Fix any ability to gift, play with or manipulate a remote cub without a valid gameplay mechanism.
+
+## Pebble and Fern
+
+Preserve their status as the player's littermates.
+
+Give Pebble distinctive sibling behavior:
+
+- Teasing.
+- Borrowing.
+- Wrestling.
+- Competition for Mama's attention.
+- Shared secrets.
+- Arguments.
+- Favors.
+- Betrayal.
+- Protectiveness.
+- Reconciliation.
+
+Include naturally occurring sibling interactions without requiring the player to initiate every one.
+
+Create occasional multi-step family events.
+
+---
+
+# 9. MAKE THE FORGOTTEN HUMAN TRAIL AN ACTIVE LOCATION
+
+The Human Trail currently needs more gameplay.
+
+Expand it with:
+
+- A visible road and human-world boundary.
+- Moving vehicles.
+- Litter and abandoned objects.
+- Signs and obstacles.
+- Hiding spots.
+- Human activity audible or visible in the distance.
+- Unsafe crossing opportunities.
+- Rare artifact discoveries.
+- Changing traffic conditions.
+- Occasional wandering visitors.
+
+## Road danger
+
+Add physical road crossing and vehicle collision.
+
+Vehicle movement must be visible and sufficiently readable that players can make informed decisions.
+
+A cub can be struck by a vehicle and suffer severe injury or death, depending on circumstances and consequence settings.
+
+Do not use arbitrary, untelegraphed instant death.
+
+Implement death, rescue, recovery and reload behavior consistently.
+
+Keep serious incidents non-graphic by default.
+
+---
+
+# 10. RARE ORPHANED NEWBORN BROWN BEAR EVENT
+
+Add a very rare, persistent encounter near the human road.
+
+The player may discover a dead mother brown bear and her surviving newborn cub.
+
+Handle this as a consequential, non-graphic event.
+
+The newborn must be a living simulated character, not a generic inventory stack.
+
+Classify the discovery as a **Mythic Encounter**, independently from the ordinary item rarity roll.
+
+Possible player choices:
+
+- Approach and investigate.
+- Seek help from Mama.
+- Rescue and carry the newborn.
+- Bring the newborn home.
+- Conceal the newborn from Mama.
+- Attempt to care for the newborn.
+- Ask another adult bear to help.
+- Abandon the encounter, with persistent consequences.
+
+The newborn has age-appropriate needs: warmth, milk, protection, sleep and dependence on adult care.
+
+It must not behave like an eleven-month-old cub.
+
+If the player tries to raise it secretly, implement genuine difficulty and discovery risk.
+
+Mama can react to finding the baby and make her own decisions.
+
+The adult criminal trader may be interested in obtaining the cub illegally, creating a dark moral and social conflict, but the cub should retain character identity and not be reduced to a normal tradable commodity.
+
+The encounter occurs at most once per save unless intentionally reset through cheats.
+
+Avoid making the orphan so rare that the developer cannot test it; provide a force-event command.
+
+---
+
+# 11. RIVERSIDE SWIMMING AND FISHING
+
+Expand Silverfin Riverside into an actual gameplay location.
+
+## Swimming
+
+Add:
+
+- Entering and exiting water.
+- Swimming animations.
+- Water depth.
+- Current strength.
+- Energy expenditure.
+- Swimming skill.
+- Being swept downstream.
+- Rescues by nearby capable bears.
+- Injury, drowning and death possibilities.
+
+Water danger should depend on conditions and player choices.
+
+Avoid instant unexplained drowning or characters swimming through solid terrain.
+
+## Fishing minigame
+
+Create an actual interactive fishing activity.
+
+Possible controls:
+
+- Approach a fishing location.
+- Prepare a pole.
+- Cast or position the line.
+- Respond to a visual bite indicator.
+- Manage tension or timing.
+- Catch or lose the fish.
+
+Different locations and times can affect fish availability.
+
+Fishing skill should improve through practice.
+
+## Mama's fishing lessons
+
+The player should be able to beg Mama to take them to the river and teach them how to fish.
+
+This must involve:
+
+- Asking Mama.
+- Her checking time, trust, availability and safety.
+- Traveling together.
+- Visible joint activity.
+- Instruction and practice.
+- Dialogue.
+- Persistent skill development and memories.
+
+Pebble may join, become jealous, tease the player or ask for a turn.
+
+---
+
+# 12. ADULT CRIMINAL WANDERING TRADER
+
+Introduce an autonomous adult bear trader who occasionally travels through the woodland and near the Human Trail.
+
+He operates a secret, illegal business.
+
+He may buy rare human vapes from cubs for money and offer contraband goods, including substances from the attached Bear Drugs encyclopedia.
+
+His existence should create a genuine underground economy, not an unlimited wealth exploit.
+
+## Canon requirements
+
+Use the **frozen Edition 1.0 encyclopedia** faithfully:
+
+- Hookleaf / Nictarine: nicotine-equivalent family; adult-only recreational products, including vapes.
+- Skunkmoss / Tetrahum: cannabis-equivalent family, adult recreational use legal and regulated, underage use illegal.
+- Brewzol: alcohol-equivalent compound used in multiple beverages.
+- Hiveglass: prohibited recreational methamphetamine-equivalent.
+- Nectopiates: opioid-equivalent umbrella family, with medical and illicit categories; individual compounds remain unnamed.
+
+Preserve the approved effects, hazards, legal distinctions, and company roles.
+
+Do not invent approved global brands, street slang, drug compounds, prescribing protocols or criminal organizations.
+
+Any new game-local product label must be clearly distinguished from approved encyclopedia canon.
+
+## Trader mechanics
+
+He should have:
+
+- An inventory.
+- A route and schedule.
+- Limited purchasing power.
+- Preferences and prices.
+- Secrecy.
+- Reputation.
+- Potential informants and rivals.
+- Actual dialogue.
+- Ability to refuse deals.
+- Risk of investigation or parental discovery.
+
+Introduce money carefully without destroying the existing barter economy.
+
+Research whether coins should be a limited parallel currency used mainly in human-related and underground trades.
+
+Do not make illicit commerce universally superior to legitimate trading.
+
+Underage access to substances should remain a prohibited, dangerous part of the fictional world, with health, legal and family consequences.
+
+Avoid, synthesis methods, detailed trafficking procedures or risk-free power-ups.
+
+The wandering trader must be an actual character who travels and can be encountered, not a shop window that appears everywhere.
+
+---
+
+# 13. IMPROVE THE MAIN GAMEPLAY LOOP
+
+Make the player understand what they are working toward.
+
+Keep the long-term goal of building the greatest little trading post.
+
+Add short-term objectives that arise naturally from characters and systems.
+
+Examples:
+
+- Help Pebble acquire something he really wants.
+- Make a new friend.
+- Resolve an argument.
+- Find a lost possession.
+- Complete a trading commission.
+- Build a useful facility.
+- Discover a secret collecting preference.
+- Learn a skill from Mama.
+- Find a rare object before Moss does.
+
+Avoid repetitive fetch quests.
+
+At least some goals should be completable in different ways.
+
+Progression should include consequences, opportunities and world changes, not only reputation numbers.
+
+Create a meaningful first 10–15 minutes and a satisfying first three in-game days.
+
+---
+
+# 14. TECHNICAL DEBT AND CODE CLEANUP
+
+The current game contains legacy v1/v2 logic alongside newer v3 overrides.
+
+Audit the entire source for:
+
+- Duplicate functions.
+- Overridden functions that are no longer needed.
+- Dead UI elements.
+- Unused event handlers.
+- Unreachable branches.
+- Obsolete variable definitions.
+- Broken conditional logic.
+- Data-schema inconsistencies.
+- Redundant state.
+- Implicit dependencies.
+- Save migration problems.
+- Memory leaks.
+- Excessive rendering work.
+- LocalStorage capacity risks.
+
+Refactor where it improves reliability and clarity.
+
+Prefer maintainable modules for gameplay state, world simulation, economy, AI, inventory, UI, renderer, audio and persistence.
+
+Keep a build process that produces a standalone offline HTML version.
+
+**Do not delete legacy code until tests prove that its behavior has been preserved or intentionally replaced.**
+
+Preserve the untouched v3 archive and provide a migration strategy for existing saves.
+
+---
+
+# 15. COMPLETE QA, PLAYTESTING AND EXPLOIT HUNT
+
+Run the game in a real browser.
+
+Inspect desktop and mobile layouts.
+
+Test every visible menu control and every major interaction path.
+
+Create an explicit button/action coverage inventory.
+
+Rare events should be triggered with deterministic seeds or developer tools.
+
+## Required adversarial tests
+
+Try to:
+
+- Duplicate items through trade/crafting/storage.
+- Obtain unavailable rare goods.
+- Gift items to absent NPCs.
+- Interact across locations incorrectly.
+- Spam friendship and sibling promises.
+- Earn unlimited reputation.
+- Skip time without survival costs.
+- Build without materials.
+- Use a nonexistent item.
+- Keep trading while dead.
+- Continue moving during a blocking modal.
+- Escape map or scene boundaries.
+- Travel without sufficient energy.
+- Confiscate an item without removing it from its original owner.
+- Recover an already-sold hidden item.
+- Break the save with repeated imports.
+- Overflow event history.
+- Exploit the wandering trader's cash supply.
+- Repeatedly trigger the newborn event.
+- Dodge consequences by changing scenes.
+- Trigger road collision and drowning states.
+- Die during travel, dialogue, fishing or construction.
+- Cause NPCs to appear in multiple places.
+- Create invalid character names or pronouns.
+
+Test the full consequences of every failure condition.
+
+Run an unmodified multi-day survival playthrough without artificially restoring player needs.
+
+Run longer automated economic simulations separately.
+
+Check browser-console errors, input handling, save restoration, rendering and state invariants.
+
+**Do not claim exhaustive testing of every state combination.** Distinguish actual tested cases from untested risks.
+
+Record pass, fail, partial and not tested with evidence.
+
+---
+
+# 16. TARGETED GAME-DESIGN RESEARCH
+
+Study why successful games in adjacent genres are enjoyable.
+
+Compare at least six relevant titles, including appropriate examples from:
+
+- Stardew Valley
+- Recettear
+- Moonlighter
+- Littlewood
+- A Short Hike
+- Animal Crossing
+- Bear and Breakfast
+- Other relevant small-indie social/management games
+
+Study in particular:
+
+- First-time onboarding.
+- Action readability.
+- Game feel and audiovisual feedback.
+- Meaningful goals.
+- Exploration.
+- NPC motivations and schedules.
+- Personal attachment to objects.
+- Inventory management.
+- Trading and negotiation.
+- Minigames.
+- Social relationships.
+- Risk and reward.
+- Common design mistakes.
+- Feature creep.
+- Meaningless procedural events.
+- Repetitive grind.
+
+Use credible developer talks, documentation, design articles and research.
+
+For each reference, explain what works, why, how it applies here, and how to test the improvement.
+
+Do not merely list games or generic principles.
+
+---
+
+# 17. PRIORITIZE THE WORK
+
+Do not treat all requests as equally urgent.
+
+### Priority 0 — Make it clear and enjoyable
+
+- Functional main menu.
+- Character creator.
+- Playable tutorial.
+- Clear contextual interactions.
+- Polished movement and feedback.
+- Menu reorganization.
+- Fix critical exploits and broken actions.
+
+### Priority 1 — Complete the existing game
+
+- Item-use audit and fixes.
+- Relationship-system improvements.
+- Working object interactions.
+- World movement and animation.
+- Genuine NPC routines and memories.
+- Save and code cleanup.
+
+### Priority 2 — New gameplay
+
+- Expanded Human Trail.
+- Road/vehicles.
+- Swimming and fishing.
+- Mama's fishing lessons.
+- Criminal wandering trader.
+- Rare orphan rescue event.
+
+### Priority 3 — Additional polish and scale
+
+- More authored events.
+- More custom item visuals.
+- More complex animation.
+- New shops and buildings.
+- Advanced social intrigue and criminal economy.
+
+Complete and test the highest priorities before spending substantial time on low-priority content.
+
+---
+
+# 18. REQUIRED DELIVERABLES
+
+Provide:
+
+1. Updated playable v4 HTML game.
+2. Complete project ZIP with source code.
+3. Original v3 backup.
+4. Main menu screenshot.
+5. Character creator screenshot.
+6. Tutorial gameplay screenshot.
+7. Updated world/UI screenshots.
+8. Human Trail and road screenshots.
+9. Fishing and Mama lesson screenshots where implemented.
+10. Criminal wandering trader screenshot where implemented.
+11. Item-by-item audit of all 58 existing items.
+12. Main feature inventory and previous-request reconciliation.
+13. UI/menu audit with before-and-after findings.
+14. Relationship-system audit.
+15. System dependency audit.
+16. Technical debt and obsolete-code audit.
+17. Research findings and citations.
+18. Test results and exploit-fix report.
+19. Known issues and genuinely unfinished features.
+20. Prioritized next development roadmap.
+
+Maintain real save compatibility where possible.
+
+Do not claim completion of unimplemented features.
+
+---
+
+# 19. FINAL ACCEPTANCE STANDARD
+
+A new player should be able to start the game, customize their baby bear, learn the controls by playing, enjoy a family interaction, explore the world using responsive keyboard movement, understand how to use objects, discover interesting social opportunities, and make a meaningful first trade.
+
+An experienced player should find persistent personalities, different strategies, rare discoveries, dynamic economics, consequences, and unexpected events.
+
+Most importantly:
+
+**Every feature should improve the actual experience of being a little brown bear living in Whisperwood—not merely increase the number of buttons in the interface.**
+
+Audit first, implement the highest-impact fixes, test them, and deliver a genuinely more enjoyable playable game.
+
+Begin development immediately. Do not stop at planning.
