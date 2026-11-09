@@ -12,7 +12,7 @@
 2. Open **[`index.html`](index.html)** in Chrome or Edge.
 3. Choose **New Game** or **Continue**. No account, install, server, or payment required.
 
-GitHub does not execute arbitrary HTML from its source-file viewer. To play **online**, the repository owner must first enable **Settings → Pages → Build and deployment → Source: GitHub Actions**. The repository already contains [a Pages deployment workflow](.github/workflows/deploy-pages.yml); after enabling Pages, run it from the **Actions** tab if necessary. The initial workflow failed because Pages had not yet been enabled (GitHub's workflow token cannot enable it). Once a deployment succeeds, the game can be played at:
+GitHub Pages is enabled and the [deployment workflow](.github/workflows/deploy-pages.yml) **succeeded on its second attempt**. GitHub does not execute arbitrary HTML from its source-file viewer, so use the playable website instead:
 **https://importedcadaver-dotcom.github.io/trading-bear-cubs/** (only after Pages is enabled and publishing succeeds).
 
 ## 📁 Project layout
