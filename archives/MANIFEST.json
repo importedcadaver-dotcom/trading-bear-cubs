@@ -1,0 +1,35 @@
+{
+  "note": "Reconstructed, playable source archives; not byte-identical historical ZIPs",
+  "archives": [
+    {
+      "file": "Little_Trading_Post_v1.zip",
+      "bytes": 22415,
+      "sha256": "f6dce0e67f38c5606b4b6edbf820808adbd76a1536b703f6c6014514c270c944"
+    },
+    {
+      "file": "Little_Trading_Post_v2.zip",
+      "bytes": 49579,
+      "sha256": "3b2e7b07c4bfbb0edcdc457b69e5248abbedaebaf28fe558ef63be72d2823065"
+    },
+    {
+      "file": "Little_Trading_Post_v3.zip",
+      "bytes": 84453,
+      "sha256": "bef5b831e26328c1c72dd45ab549f906bf2d792bc83f5162b0261374b6a7156b"
+    },
+    {
+      "file": "Little_Trading_Post_v4.zip",
+      "bytes": 108428,
+      "sha256": "bb0db381c6bb66687a7bab9c607a59c24a1fc86b140505e5189855f1a593e59b"
+    },
+    {
+      "file": "Little_Trading_Post_v5.zip",
+      "bytes": 123823,
+      "sha256": "cdb5d8c1834feca9af67d5946ff881a51ae0591b74b3f696ff5ca1450ae032f8"
+    },
+    {
+      "file": "Little_Trading_Post_COMPLETE_SOURCE.zip",
+      "bytes": 428153,
+      "sha256": "24ededf064b3502072d27c81184dfc7ca10d73088ae8e73e294439f8e4892773"
+    }
+  ]
+}
