@@ -1,0 +1,8 @@
+# Applied design research — v5
+
+1. **Progressive disclosure:** Jakob Nielsen, Nielsen Norman Group, [Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/). Important actions appear first; secondary controls should be disclosed when requested. Applied to hidden exploration sidebar and context-driven inventory/barter access. The game still contains a number of old panels that should be simplified further.
+2. **Interactive, replayable tutorial:** Microsoft Game Dev, [XAG 109: Objective Clarity](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/109) and [Accessible feature tags](https://learn.microsoft.com/en-us/gaming/accessibility/accessibility-feature-tags). Tutorials should demonstrate real controls and remain accessible on demand. Applied to preserving the guided first morning; a longer forced tutorial was **not** selected without user approval.
+3. **Adjustable scaling:** [Stardew Valley Wiki — Options](https://stardewvalleywiki.com/Options). Its separately configurable UI scale and scene zoom inspired prioritizing game space and reducing persistent information. The v5 game does **not yet** offer comparably complete UI scale controls.
+4. **Responsiveness and feedback:** classic game-feel principles—actions should have observable visual, audio and state consequences. Applied to item handoff effects, scene notices, build ghost preview, wider negotiation context and explicit trade reasons. Shared effects are not equivalent to a unique full animation for every action.
+
+These are externally informed design principles. Exact features, weights, fictional drug laws and family relationships come from the user's project, not from these external references.
