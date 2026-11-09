@@ -2,7 +2,7 @@
 
 **A playable, offline-first browser game about a young brown bear cub who owns a woodland trading post.** Other cubs have independent wants, memories, families, possessions, and their own trading lives.
 
-> Project owner: `importedcadaver-dotcom` · Current playable build: **v5** · Status: **active private-game development / unfinished systems**
+> Project owner: `importedcadaver-dotcom` · Current playable build: **v5.1.0** · Status: **active private-game development / unfinished systems**
 >
 > **Content warning:** Fictional underage animal characters, substance use/addiction, contraband, coercion, starvation, injury and death can occur. These are game systems with consequences, not real-world instructions.
 
@@ -13,34 +13,53 @@
 3. Choose **New Game** or **Continue**. No account, install, server, or payment required.
 
 GitHub Pages is enabled and the [deployment workflow](.github/workflows/deploy-pages.yml) **succeeded on its second attempt**. GitHub does not execute arbitrary HTML from its source-file viewer, so use the playable website instead:
-**https://importedcadaver-dotcom.github.io/trading-bear-cubs/** (only after Pages is enabled and publishing succeeds).
+**https://importedcadaver-dotcom.github.io/trading-bear-cubs/** (site updates only after the passing gameplay-test deployment).
 
 ## 📁 Project layout
 
 | Location | What it contains |
 |---|---|
-| [`index.html`](index.html) | Current playable v5 standalone game |
+| [`index.html`](index.html) | Current playable v5.1 standalone game |
 | [`versions/v1/`](versions/v1/) | Original prototype HTML |
 | [`versions/v2/`](versions/v2/) | v2 playable HTML |
 | [`versions/v3/`](versions/v3/) | v3 playable HTML |
 | [`versions/v4/`](versions/v4/) | v4 playable HTML |
+| [`versions/v5/`](versions/v5/) | Historical v5 playable HTML, preserved before v5.1 |
 | [`docs/v3/`](docs/v3/) | Original catalog, drop weights, rarity, research, dependency & QA reports |
 | [`docs/v4/`](docs/v4/) | Item-use audit and v4 research/QA |
 | [`docs/v5/`](docs/v5/) | [Audit](docs/v5/AUDIT_V5.md), [requirements](docs/v5/REQUIREMENTS_V5.md), [drug economy](docs/v5/DRUG_ECONOMY_V5.md), [tests](docs/v5/TEST_REPORT_V5.md), [roadmap](docs/v5/ROADMAP_V5.md) |
 | [`docs/canon/`](docs/canon/) | Frozen Edition 1.0 bear-substance encyclopedia |
+| [`docs/ENGINEERING_V51.md`](docs/ENGINEERING_V51.md) | v5.1 engineering and QA overview |
+| [`CHANGELOG.md`](CHANGELOG.md) | Release changes and known limits |
 | [`docs/briefs/`](docs/briefs/) | Historical design prompts and development instructions |
 | [`docs/PROJECT_HISTORY.md`](docs/PROJECT_HISTORY.md) | Design decisions, deferred requests, provenance |
 | [`archives/`](archives/) | Reconstructed downloadable version ZIPs if the archive-generation workflow has run |
+
+
+## Development and automated QA
+
+The HTML needs no runtime dependencies. Optional development tools:
+
+```bash
+npm install
+npm run dev       # Vite development server
+npm run test      # Vitest pure economy checks
+npm run build     # Static output in dist/
+python tests/reliability_v51.py  # Requires Playwright Chromium
+pytest -q tests/test_state_invariants_v51.py # Requires Hypothesis + Playwright
+```
+
+GitHub Pages deploys **only after the browser and economic checks pass**. [Releases](https://github.com/importedcadaver-dotcom/trading-bear-cubs/releases) provide versioned downloads, while [Issues](https://github.com/importedcadaver-dotcom/trading-bear-cubs/issues) track the remaining feature work. The CodeQL, Dependabot and Codespaces configurations are in `.github/` and `.devcontainer/`.
 
 ## Core premise
 
 You start with **three berries and a very nice stick**. Cub-owned objects have **personal value**, not only a universal price. The game combines bartering, friendship, family, rivalry, exploration, crafting, property management, survival, rarity, fictional contraband, and emergent NPC behavior.
 
-The latest version adds a full-screen title, character creator, clearer exploration UI, panda wandering trader, honey-based contraband economy, dependent-NPC trade consequences, and more.
+V5.1 repairs mouse click alignment and obstacle-aware Mama navigation, rejects free-reputation null trades, adds a compact always-visible needs HUD, mobile following camera and animated item exchanges. It also adds Playwright, Hypothesis, Vitest, Vite, CodeQL, Dependabot, and versioned release tooling.
 
 ## Important remaining work
 
-V5 is playable but **not a finished, fully polished indie game**. See [ROADMAP_V5](docs/v5/ROADMAP_V5.md) and [AUDIT_V5](docs/v5/AUDIT_V5.md). Particularly incomplete: full NPC pathfinding, deep event histories, unique world animations for all actions, extensive newborn care, physically modeled honey containers, complete accessibility/migration testing, and long-form balance.
+V5.1 is playable but **not a finished, fully polished indie game**. See [ROADMAP_V5](docs/v5/ROADMAP_V5.md) and [AUDIT_V5](docs/v5/AUDIT_V5.md). Particularly incomplete: full NPC pathfinding, deep event histories, unique world animations for all actions, extensive newborn care, physically modeled honey containers, complete accessibility/migration testing, and long-form balance.
 
 Tutorial duration and extreme rival-crime branches are **not automatically approved**. Do not silently replace player decisions or label untested features as complete.
 
