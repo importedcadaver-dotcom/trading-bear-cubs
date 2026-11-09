@@ -1,0 +1,902 @@
+# THE LITTLE TRADING POST v3
+
+## WORLD EXPANSION, SOCIAL AUTONOMY, RARITY ECONOMY & UI OVERHAUL
+
+### 0. MISSION — EXPAND THE EXISTING GAME
+
+You are the lead game director, systems programmer, pixel artist, UI/UX designer, economy designer, and QA engineer for **The Little Trading Post**.
+
+Continue development from the existing playable v2 HTML game.
+
+**DO NOT build a new game from scratch, replace the project with a mockup, or produce only a design document.**
+
+You have authorization to inspect the source, research design principles, implement changes, playtest, fix bugs, and deliver an improved playable build without repeatedly asking for approval.
+
+I have provided two screenshots of the current game.
+
+- Screenshot 1: A close-up of the current Whisperwood Clearing.
+- Screenshot 2: The game's current desktop layout showing the amount of screen space available.
+
+Use these as the actual visual baseline. The chat overlay in screenshot 2 is external to the game; do not mistake it for game UI.
+
+Preserve the existing gameplay, working economy, saved progression where possible, characters, visual identity, and approved features.
+
+**Primary goal:** Transform the current single-clearing trading interface into a small but genuine explorable bear-cub life simulator with a living world, meaningful family relationships, independent NPC possessions, location-based gameplay, and a deeper social economy.
+
+---
+
+# 1. AUDIT THE EXISTING GAME BEFORE BUILDING
+
+Inspect the complete v2 HTML source and all gameplay systems.
+
+Do not assume that a previously reported feature actually works. Verify it.
+
+Produce a feature inventory with:
+
+1. Feature name.
+2. Current implementation and entry point.
+3. Evidence that it functions.
+4. Dependencies on other systems.
+5. Defects, exploits, or missing mechanics.
+6. Recommended changes.
+7. Priority.
+
+Investigate whether currently implemented features meaningfully interact.
+
+Examples:
+
+- Does hunger influence travel, wrestling, and negotiation?
+- Does Mama's trust influence whether she searches possessions?
+- Do sibling relationships affect whether Pebble shares valuable items?
+- Do rarity and scarcity alter trading decisions?
+- Can NPCs actually use the things they acquire?
+- Does building a bench cause cubs to sit there?
+- Do hidden items remain physically stored in a location?
+- Does a rival remember intimidation or dishonesty?
+- Can an NPC be somewhere other than Whisperwood Clearing?
+- Do items, structures, and social interactions have meaningful effects beyond reputation points?
+
+**I want a dependency and interaction audit, not merely a list of features.**
+
+Find systems that are technically present but disconnected, decorative, exploitable, or shallow.
+
+Use a dependency matrix and identify high-impact missing connections.
+
+---
+
+# 2. THE BIGGEST PROBLEM: THERE IS NO ACTUAL WORLD
+
+Currently, almost the entire visual game takes place in Whisperwood Clearing.
+
+**Whisperwood Clearing must be ONE location, not the entire playable universe.**
+
+Add a connected, physically represented woodland world.
+
+## 2.1 Required locations
+
+Implement at least these distinct explorable locations:
+
+| Location               | Core gameplay                                                  |
+| ---------------------- | -------------------------------------------------------------- |
+| Whisperwood Clearing   | Player-owned trading post, visitors, commerce, construction    |
+| Mama's Den             | Family life, food, sleeping, discipline, hiding possessions    |
+| Pebble's Favorite Spot | Sibling time, secrets, shared memories, collecting             |
+| Riverside              | Drinking, fishing, stones, water-related activities            |
+| Deep Woodland          | Foraging, sticks, exploration, hidden treasures                |
+| Cub Playground         | Wrestling, chasing, games, friendships, rivalries              |
+| Rival Trading Spot     | Independent traders, competitor stalls, rival deals            |
+| Human Trail            | Extremely rare human artifacts, discoveries, parental warnings |
+
+These must be real scenes with distinct maps, objects, characters, interactables, and environmental identities.
+
+**Do not implement locations as text-only popups that say "You visited the den."**
+
+Mama's Den must have an actual visible interior.
+
+A valid den scene might include:
+
+- A sleeping nest.
+- Mama's resting area.
+- A family food pile.
+- Sleeping cubs.
+- Hidden storage places.
+- Entrances and exits.
+- Rocks, roots, bedding, and decorations.
+- Family members moving and interacting.
+- Objects that the player can inspect and use.
+
+A player must be able to enter Mama's Den, see Mama and family members there, interact with objects, walk around, and leave.
+
+## 2.2 Real travel and navigation
+
+Implement a proper **world map** showing how locations connect.
+
+The player should be able to travel using clearly visible paths, exits, or map controls.
+
+Travel must:
+
+- Change the actual rendered scene.
+- Update the player's physical location.
+- Advance time according to route distance.
+- Use appropriate energy.
+- Respect time-of-day accessibility.
+- Allow other characters to travel independently.
+- Preserve NPC locations and possessions.
+- Trigger occasional contextually appropriate encounters.
+
+Prefer intuitive click-to-move controls, with optional keyboard movement where feasible.
+
+Use real destination transitions, not teleportation disguised as a menu.
+
+Travel time should be grounded in the map's relative distances, without making short trips tedious.
+
+## 2.3 Persistent character locations
+
+Cubs must have a current location, destination, schedule, and intention.
+
+A cub who leaves the marketplace should be physically absent from it.
+
+If Fern visits the river, I should not simultaneously see Fern at the trading post.
+
+If Pebble goes home, I should be able to visit him or discover that he is sleeping.
+
+Off-screen characters continue living and making decisions, but preserve consistent world-state rules.
+
+Avoid NPC duplication, unrealistic teleportation, and characters being in two locations simultaneously.
+
+---
+
+# 3. MAKE EVERY BUTTON PRODUCE A REAL GAMEPLAY RESPONSE
+
+Audit every visible button and player action.
+
+Each action must cause a demonstrable response, such as:
+
+- A character animation.
+- A world-state change.
+- A location change.
+- An inventory transaction.
+- Dialogue or a speech bubble.
+- A change to needs or relationships.
+- A persistent memory.
+- A logged event.
+- A visible construction change.
+- A meaningful refusal with an explanation.
+
+Not every button must always succeed, but **a refusal must be a valid simulation outcome rather than a fake or broken interaction**.
+
+For example:
+
+"Visit Mama" should initiate travel to Mama's Den, not simply increase Mama's trust by two points.
+
+"Wrestle Pebble" should start an observable interaction between two cubs, with variable outcomes.
+
+"Hide item" should place the chosen object in a persistent storage location.
+
+"Build bench" should consume resources and create a visible bench.
+
+"Threaten cub" should initiate dialogue and allow the target to react rather than automatically surrendering possessions.
+
+Create an automated action audit covering every functional UI control.
+
+---
+
+# 4. NPCS MUST ACQUIRE, OWN, AND PROTECT RARE ITEMS
+
+Currently, I want other cubs to become much more interesting competitors.
+
+They must not exist solely to supply the player with goods.
+
+**NPCs should sometimes find exceptionally rare and valuable items before I do.**
+
+Examples:
+
+- Pebble discovers a legendary polished stone.
+- Fern inherits an emotionally precious toy.
+- Moss acquires an epic human artifact.
+- Sprout finds something extraordinarily rare without understanding its market value.
+- Juniper crafts an unusually valuable object.
+
+NPCs must have legitimate ways to acquire rare goods through exploration, crafting, gifts, trading, family events, and discoveries.
+
+They can:
+
+- Treasure them.
+- Display them.
+- Hide them.
+- Refuse to sell them.
+- Trade them to another NPC.
+- Lose them.
+- Gift them.
+- Become emotionally attached.
+- Become suspicious when others ask about them.
+
+## 4.1 Envy, pride, and jealousy
+
+Add an actual social-emotion system.
+
+The player can feel envious of another cub's possession, and the game should communicate that through optional internal thoughts, dialogue, comparisons, and reactions.
+
+NPCs can envy the player's possessions too.
+
+Envy should influence behavior without automatically overriding autonomy.
+
+Potential reactions include:
+
+- Trying to negotiate.
+- Trying to impress another cub.
+- Bragging about one's own possessions.
+- Becoming jealous of a sibling's success.
+- Forming a collecting rivalry.
+- Saving resources for a desired item.
+- Asking Mama about an object.
+- Gossiping about another trader's treasure.
+
+Some items should become socially prestigious without having a fixed monetary price.
+
+---
+
+# 5. DECEPTION, SECRECY, PERSUASION, AND CONFLICT
+
+Cubs should not always reveal what they own.
+
+Implement distinct inventory states:
+
+- Carried.
+- Displayed.
+- Stored.
+- Hidden.
+- Lent out.
+- Reserved.
+- Known to specific characters.
+- Rumored but unverified.
+
+Characters must distinguish between what they actually know and what they merely suspect.
+
+A cub might say:
+
+"I don't have that blue stone."
+
+But actually have it hidden under a tree root.
+
+This should be a real deception mechanic linked to inventories, memories, visibility, and knowledge.
+
+## 5.1 Player social actions
+
+Implement choices such as:
+
+- Ask politely.
+- Persuade.
+- Negotiate.
+- Offer a favor.
+- Beg.
+- Intimidate.
+- Threaten
+- Accuse of lying.
+- Demand an explanation.
+- Confront with evidence.
+- Blackmail using a discovered secret.
+- Apologize.
+- Forgive.
+- Make peace.
+- Report behavior to Mama.
+
+NPCs can use comparable actions against the player and each other.
+
+Blackmail must require a real known secret, not merely a button that generates free goods.
+
+## 5.2 Autonomous responses
+
+NPCs should be able to:
+
+- Agree.
+- Refuse.
+- Bargain.
+- Lie.
+- Call the player's bluff.
+- Run away.
+- Cry.
+- Become angry.
+- Retaliate.
+- Fight back.
+- Seek help.
+- Snitch to Mama.
+- Tell another cub.
+- Form a grudge.
+- Hide items more carefully.
+- Reconcile later.
+
+Responses must depend on personality, age, courage, relationships, memories, actual knowledge, and the situation.
+
+Physical confrontation should have age-appropriate, non-graphic consequences.
+
+Threatening weaker cubs should not be a universally optimal business strategy. It may produce immediate compliance but lasting distrust, retaliation, or parental intervention.
+
+---
+
+# 6. PEBBLE IS MY LITTERMATE — MAKE THAT MATTER
+
+The player and Pebble are biological littermates, both **11 months old**.
+
+Preserve this canon.
+
+Their relationship must be fundamentally different from an ordinary friendship.
+
+Introduce persistent sibling-specific systems:
+
+- Shared history.
+- Familiarity.
+- Sibling teasing.
+- Favoritism and jealousy.
+- Competition for attention.
+- Trust or betrayal.
+- Sharing a sleeping nest.
+- Borrowing without asking.
+- Protecting one another.
+- Fighting and reconciling.
+- Asking Mama to intervene.
+- Keeping shared secrets.
+- Secret promises.
+- Family loyalties.
+
+Pebble should sometimes behave like an actual sibling rather than another customer.
+
+He may visit my trading post without a commercial motive, borrow my toys, annoy me, offer help, refuse to share his prized objects, or report wrongdoing to Mama.
+
+His affection, resentment, and loyalty must develop through actions and persistent memories.
+
+He should have his own goals, not simply exist as my sidekick.
+
+Add distinctive interactions for other siblings and age groups as well.
+
+---
+
+# 7. MAMA, HUNGER, NEGLECT, AND HARSH CONSEQUENCES
+
+Keep physical needs meaningful.
+
+I specifically want a harsh consequence system where hunger can become genuinely dangerous.
+
+When hunger reaches zero, it should trigger an urgent survival crisis, not just a meaningless red bar.
+
+Mama should have opportunities to notice hunger through observation, schedules, proximity, and prior knowledge.
+
+She may:
+
+- Call the cub home.
+- Offer food.
+- Force a feeding intervention within the fictional game's rules.
+- Restrict exploration.
+- Close the trading post temporarily.
+- Become angry or worried.
+- Refuse help in extreme relationship or neglect scenarios.
+
+If Mama does not intervene and the cub remains without food, starvation and death can eventually occur.
+
+However:
+
+- Zero hunger must not produce unexplained instant death.
+- Health deterioration should be visible and logically timed.
+- Outcomes should depend on the actual situation, not only a single arbitrary trust score.
+- The player should receive meaningful warnings and opportunities to respond.
+- Death must have an appropriate game-over, restart, or reload flow.
+- Mama's behavior and history must remain internally consistent.
+- Avoid unavoidable starvation loops.
+
+Add a configurable consequence-severity option if useful, with the requested harsh simulation available.
+
+---
+
+# 8. DESIGN A REAL SIX-TIER RARITY SYSTEM
+
+Audit the current item definitions and report whether the game actually implements a complete rarity system.
+
+Do not claim rarity tiers exist simply because some objects are described as rare.
+
+Use these six tiers:
+
+| Tier      | Proposed baseline weight |
+| --------- | -----------------------: |
+| Common    |                      50% |
+| Uncommon  |                      27% |
+| Rare      |                      14% |
+| Epic      |                       6% |
+| Legendary |                     2.5% |
+| Mythic    |                     0.5% |
+
+These are starting weights for eligible rarity rolls, not mandatory drop rates for every location.
+
+Research and rebalance them if necessary.
+
+**Rarity must not equal universal item value.**
+
+An extremely rare object can be worthless to one cub and priceless to another.
+
+Rarity influences supply, discovery chance, social perception, and prestige. Personal value still depends on the individual character.
+
+## 8.1 Full item catalog
+
+Extract every currently implemented item from the actual v2 source.
+
+Previously, v2 was reported to contain 55 item types. Verify the true count.
+
+Produce a complete item catalog with:
+
+- Item ID.
+- Display name.
+- Category.
+- Rarity.
+- Description.
+- Where it is obtained.
+- Actual drop weight.
+- Uses and interactions.
+- Crafting recipes.
+- Base utility.
+- Storage rules.
+- NPC preferences.
+- Special effects.
+- Whether it is currently obtainable.
+
+Do not silently fabricate missing definitions or claim generic item icons represent unique mechanics.
+
+Expand items only where they provide new gameplay.
+
+Give NPCs access to the same legitimate rarity economy as the player, with appropriate location, ability, and circumstance constraints.
+
+---
+
+# 9. EXPAND THE MYTHIC VAPE INTO VARIANTS
+
+Preserve the previously approved mythical human vape collectible and its functional use interaction.
+
+Add multiple fictional flavor variants with distinct appearance, packaging, rarity, and social significance.
+
+The variants should remain extremely rare human artifacts.
+
+A variant must not automatically count as a completely independent mythic item if it is merely a cosmetic version.
+
+Include:
+
+- Distinct visual designs.
+- Variant-specific descriptions.
+- Discovery histories.
+- Different cub reactions.
+- The ability to hide, display, trade, examine, or use a specimen.
+- A visible vapor-use animation.
+- Persistent health, secrecy, and parental consequences.
+
+Do not make use a risk-free buff or the best economic strategy. Avoid real-world instructions, commercial branding, or portraying nicotine exposure as harmless.
+
+Mama and other cubs should respond based on what they witness or actually learn, rather than possessing omniscient knowledge.
+
+---
+
+# 10. ADD REAL DIALOGUE, CHAT, AND SPEECH BUBBLES
+
+Currently, the bears need much richer communication.
+
+Implement a contextual dialogue system for:
+
+- Greetings.
+- Negotiations.
+- Family interactions.
+- Secrets.
+- Bragging.
+- Jealousy.
+- Threats.
+- Lying.
+- Accusations.
+- Comfort.
+- Wrestling.
+- Gift-giving.
+- Apologies.
+- Arguments.
+- Requests for assistance.
+
+## 10.1 In-world speech bubbles
+
+Bears should visibly speak in the current scene.
+
+Speech bubbles must:
+
+- Follow the correct character.
+- Never obscure their face.
+- Fit within viewport boundaries.
+- Display readable text.
+- Avoid covering other important controls.
+- Show the speaker clearly.
+- Support short exchanges between multiple NPCs.
+
+## 10.2 Conversation UI
+
+Allow the player to initiate actual conversations with choices.
+
+Conversations should incorporate contextual data rather than relying entirely on random generic lines.
+
+For example, Pebble should be able to reference a real toy, prior sibling argument, or his currently hidden stone.
+
+NPCs should remember important conversation outcomes.
+
+Not every NPC needs unlimited generative AI dialogue. A well-designed deterministic dialogue system with contextual variation is preferable to shallow, inconsistent responses.
+
+---
+
+# 11. COMPLETE ACTION, EVENT, AND DIALOGUE LOGGING
+
+Add a persistent event-history system that records **every meaningful action and simulation event**, including events not directly caused by the player.
+
+Record:
+
+- In-game timestamp.
+- Character or characters involved.
+- Location.
+- Event category.
+- Action.
+- Outcome.
+- Relevant item transactions.
+- Dialogue.
+- Relationship changes.
+- Needs changes.
+- Important knowledge and memory updates.
+
+Provide filters for:
+
+**All · Player · NPCs · Trading · Family · Social · Exploration · Construction · Dialogue · Conflicts · Rare Discoveries**
+
+Allow the player to inspect earlier events and export the log.
+
+Do not silently truncate historical events after an arbitrary small number of entries.
+
+Use an appropriate persistence strategy for long-running saves, and distinguish the full history from the short recent-events feed.
+
+A development/debug mode should allow inspecting underlying state transitions.
+
+---
+
+# 12. MAJOR UI/UX OVERHAUL — USE THE SCREENSHOTS
+
+Critically audit the current website's layout, visual hierarchy, readability, usability, spacing, and responsiveness.
+
+Conduct targeted research into interfaces for indie life simulators, pixel-art RPGs, shop simulators, and management games.
+
+Look at relevant principles and reference games such as:
+
+- Stardew Valley.
+- Littlewood.
+- Bear and Breakfast.
+- Moonlighter.
+- Recettear.
+- Animal Crossing.
+- A Short Hike.
+
+Extract specific useful design lessons. Don't copy their assets or layouts wholesale.
+
+## 12.1 Make the playable world MUCH larger
+
+In screenshot 2, the gameplay scene occupies a relatively small part of my available desktop screen.
+
+The playable scene is the most important visual component and should receive far more space.
+
+At a desktop viewport around 1440×900:
+
+- Prioritize a large, visually detailed world scene.
+- Keep the world readable at gameplay scale.
+- Allow responsive resizing or sensible zoom.
+- Use remaining screen space for essential controls.
+- Move secondary information into collapsible panels or tabs.
+- Avoid large unused margins.
+- Avoid making the player scroll past the game to perform basic actions.
+
+The game should feel more like a playable indie RPG/life sim and less like a website dashboard with a miniature game embedded inside it.
+
+## 12.2 Inventory must remain accessible
+
+**The current inventory is too far down the page.**
+
+Redesign it so I do not have to repeatedly scroll down just to examine my possessions.
+
+Options to evaluate:
+
+- Persistent bottom inventory bar.
+- Collapsible right-side backpack panel.
+- Hotbar plus full backpack.
+- Contextual inventory drawer.
+- Resizable panels.
+
+Choose the most usable approach after research.
+
+Inventory should support selecting objects, context actions, filtering, examining, trading, building, consuming, and storing.
+
+Preserve detailed item information without crowding the main screen.
+
+## 12.3 Fix character labels
+
+In screenshot 1, the label "YOU" appears directly over my cub's face and eyes.
+
+**Fix this specifically.**
+
+Move the player's label to a safe position above the trading post sign or otherwise away from the character's face, while maintaining clear identification.
+
+Also prevent:
+
+- Nameplates overlapping faces.
+- Speech bubbles covering expressions.
+- Multiple NPC labels stacking.
+- Text clipping at screen edges.
+- UI elements hiding other characters.
+
+## 12.4 Improve the style of the interface
+
+Audit:
+
+- Typography.
+- Font sizes.
+- Contrast.
+- Pixel consistency.
+- Color palette.
+- Button hierarchy.
+- Panel density.
+- Empty space.
+- Information prioritization.
+- Tooltip clarity.
+- Discoverability.
+- Accessibility.
+- Keyboard and mouse navigation.
+- Mobile compatibility.
+
+Keep the charming woodland pixel-art identity, but make the UI feel professionally designed and integrated with the game world.
+
+Support responsive layouts rather than simply shrinking desktop panels.
+
+---
+
+# 13. ADD A PROPER DEVELOPER / CHEAT MENU
+
+I want cheats because this is a private game.
+
+Implement a dedicated developer menu, separate from ordinary gameplay.
+
+Include:
+
+### Player cheats
+
+- Unlimited inventory capacity.
+- Spawn any item.
+- Select item rarity.
+- Max needs.
+- Infinite stamina.
+- Invulnerability.
+- Teleport to locations.
+- Set time and weather.
+- Fast-forward days.
+- Change reputation.
+- Unlock recipes.
+- Unlock construction.
+
+### NPC controls
+
+- Inspect NPC inventory.
+- Inspect hidden possessions.
+- Inspect wants and valuations.
+- Inspect relationships.
+- Adjust friendship or rivalry.
+- Give NPCs rare items.
+- Force a particular NPC location or schedule for testing.
+- Inspect memories and intentions.
+
+### Economy tools
+
+- Simulate NPC trades.
+- Inspect resource pools.
+- Change drop weights for tests.
+- Examine demand and saturation.
+- Reset individual resource locations.
+- Show item generation histories.
+
+### Testing tools
+
+- Export/import saves.
+- Create test scenarios.
+- Spawn rare encounters.
+- Trigger Mama inspections.
+- Simulate starvation and rescue.
+- Review state invariants.
+- Show detailed debug logs.
+
+Clearly distinguish cheat-enabled saves or sessions if needed.
+
+Cheats should work without breaking normal game logic when toggled off.
+
+---
+
+# 14. IMPROVE CHARACTER AND ENVIRONMENT ANIMATION
+
+Keep improving the bear art.
+
+Characters should remain recognizable as baby brown bears with rounded ears, wide heads, compact muzzles, and bear-like paws.
+
+Add or improve:
+
+- Walking.
+- Sleeping.
+- Eating.
+- Drinking.
+- Carrying.
+- Showing objects.
+- Trading.
+- Wrestling.
+- Playing.
+- Hiding something.
+- Looking suspicious.
+- Crying.
+- Celebrating.
+- Talking.
+- Sneaking.
+- Mama hugging or carrying a cub.
+
+Support sensible sprite layering and position-aware rendering.
+
+In particular, avoid floating character animations disconnected from actual locations and interactable structures.
+
+The world should visibly show the consequences of actions where possible.
+
+---
+
+# 15. RESEARCH THE GENRE AND ITS GAME DESIGN
+
+Research the actual gameplay loops of relevant games rather than merely mentioning their names.
+
+Study:
+
+- Exploration and map progression.
+- Daily scheduling.
+- Social relationship development.
+- Autonomous NPC simulation.
+- Scarcity and item rarity.
+- Inventory and crafting usability.
+- Shop ownership and economy management.
+- Risk and reward.
+- Meaningful consequences.
+- Intrinsic versus extrinsic motivation.
+- Player agency.
+- Information asymmetry in negotiations.
+- Emergent social conflicts.
+
+Compare at least five relevant games and explain which specific mechanics would genuinely improve The Little Trading Post.
+
+For every research-backed recommendation:
+
+1. Identify the source or reference.
+2. Explain the observed principle.
+3. Explain why it applies to our game.
+4. Specify the implementation.
+5. Define how to test whether it improved the experience.
+
+Distinguish actual research from your own proposals.
+
+Do not use generic advice such as "add more depth" without a concrete mechanism.
+
+---
+
+# 16. SYSTEM DEPENDENCY AND CONSEQUENCE AUDIT
+
+Once the expansion is implemented, conduct an additional comprehensive audit.
+
+Evaluate how these systems interact:
+
+**Time × Travel × Hunger × Mama × Family × NPC Schedules × Inventory × Rarity × Trading × Social Relationships × Secrecy × Construction × Reputation × Dialogue × Memory × Survival**
+
+Find missing causal links and contradictions.
+
+Examples of questions to test:
+
+- If Pebble hides a legendary stone at home, can the player wrongly buy it from his carried inventory?
+- If Mama confiscates an item, does it disappear from all other inventories correctly?
+- If a cub threatens someone at the river, can a witness later tell Mama?
+- If Moss discovers a mythic object, can he refuse to trade it for reasonable reasons?
+- If a younger cub becomes hungry during a trip, do they act differently?
+- If the market is closed, can cubs still use the player's stall without permission?
+- If a player builds a water station, does it affect NPC hydration or visit frequency?
+- If a sibling is angry, does that affect social play, trades, and family conversations?
+- If a cub travels to another location, can they be seen in both places?
+- If a rare artifact is hidden, what exactly does each character know about it?
+- If an NPC dies or permanently leaves, what happens to their possessions and relationships?
+- Can repeated actions farm infinite friendship, rare items, construction materials, or reputation?
+- Can the player force economically valuable items from weaker cubs without proportionate consequences?
+- Can an NPC claim an item they do not actually possess?
+
+Build a dependency matrix and test the most consequential interactions.
+
+**The game should operate as one coherent simulation rather than a collection of unrelated menus.**
+
+---
+
+# 17. REQUIRED ACCEPTANCE TESTS
+
+Test the following in the actual playable build.
+
+1. The player can leave Whisperwood Clearing and physically enter Mama's Den.
+2. Mama's Den has a distinctive visible interior and usable objects.
+3. The world map shows real connected destinations.
+4. Traveling changes location, time, and energy consistently.
+5. NPCs have persistent positions and cannot be in two locations at once.
+6. NPCs can obtain epic, legendary, and mythic goods independently.
+7. Rare items can become unavailable because an NPC decides to keep or hide them.
+8. A player can experience a meaningful jealousy or collection-rivalry event.
+9. Hidden objects remain physically stored and are not accidentally exposed in trade inventories.
+10. Cubs can lie about their possessions.
+11. Persuasion, intimidation, and blackmail have distinct possible outcomes.
+12. NPCs may resist, retaliate, report behavior, or reconcile.
+13. Pebble and the player have functional sibling-specific interactions.
+14. Mama can respond to sibling conflicts and serious neglect.
+15. Zero hunger leads to a coherent crisis, with rescue or eventual death possible under the rules.
+16. All six rarity categories are implemented with documented acquisition weights.
+17. The full item catalog accurately describes the actual implemented items.
+18. Mythic vape variants are differentiated and usable within the game's consequence system.
+19. NPCs and the player can communicate through readable in-world speech bubbles.
+20. Important conversations are retained in the persistent event log.
+21. The developer menu can inspect, alter, and test actual state.
+22. The playable world is substantially larger in the desktop layout.
+23. Inventory is accessible without repeatedly scrolling down.
+24. The player's "YOU" label never covers their face.
+25. No duplicated items, impossible inventory transfers, negative quantities, or free-resource exploits.
+26. Save/load preserves locations, family states, hidden items, relationships, rarity, dialogue history, and construction.
+27. The original trading loop remains functional.
+28. Test actual desktop and mobile views.
+29. Run a longer automated multi-day simulation and inspect economy behavior.
+30. Audit every player-facing control for a verifiable gameplay response.
+
+Record pass, fail, partial, and untested separately.
+
+Never claim a feature is complete simply because a menu or button exists.
+
+---
+
+# 18. DELIVERABLES
+
+Provide:
+
+1. **Updated playable v3 website.**
+2. Complete downloadable project ZIP.
+3. Actual desktop and mobile screenshots.
+4. Screenshot of Mama's Den.
+5. Screenshot of the world map.
+6. Screenshot showing the redesigned enlarged gameplay viewport and accessible inventory.
+7. Screenshot demonstrating NPC dialogue and an important social interaction.
+8. Complete audited item catalog with rarity tiers and acquisition probabilities.
+9. Verified game-feature inventory.
+10. Cross-system dependency matrix.
+11. Before-and-after UI/UX audit.
+12. Gameplay and economy audit.
+13. Research references.
+14. Automated test results and manual playtest findings.
+15. Known issues and unfinished systems.
+16. Prioritized roadmap for further development.
+
+Preserve a copy of the working v2 baseline.
+
+Do not silently remove existing functionality to make new features easier.
+
+If everything cannot be completed in one execution, prioritize a genuinely playable world map, Mama's Den, real travel, better UI and inventory, sibling gameplay, and persistent NPC item ownership before secondary polish.
+
+Report the precise limitations of whatever is delivered.
+
+---
+
+# 19. FINAL DESIGN STANDARD
+
+**The Little Trading Post is not just a trading game with bear pictures.**
+
+It is a miniature woodland society inhabited by baby bears.
+
+The player should be able to wake up in Mama's Den, argue with a littermate, eat breakfast, discover that another cub obtained an extraordinarily rare treasure, travel through the woods, visit a rival, attempt a complicated negotiation, hide a suspicious object from Mama, return home, and discover that the other cubs have continued living without them.
+
+NPCs must have their own possessions, secrets, ambitions, family connections, memories, and changing relationships.
+
+The player must be able to own, manage, expand, and customize the trading post while participating in the larger community.
+
+The world should be cute, readable, reactive, occasionally unfair, and full of meaningful surprises.
+
+**Build an actual explorable game. Make the systems interact. Audit what already exists. Research before redesigning. Test actual behavior. Deliver the playable result, not just an impressive description of what it might become.**
+
+Begin immediately with source inspection, an honest audit, and the highest-impact implementation work. Do not repeatedly ask for approval.
