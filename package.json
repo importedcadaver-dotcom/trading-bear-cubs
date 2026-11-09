@@ -1,0 +1,18 @@
+{
+  "name": "little-trading-post",
+  "version": "5.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline-first brown bear cub trading game; optional Vite development and Vitest tests",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "python tests/reliability_v51.py"
+  },
+  "devDependencies": {
+    "vite": "7.0.0",
+    "vitest": "3.2.0"
+  }
+}

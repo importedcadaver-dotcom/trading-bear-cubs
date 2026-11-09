@@ -1,0 +1,42 @@
+name: Publish versioned game release
+on:
+  push:
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install browser test tools
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify game before publishing release
+        run: python tests/reliability_v51.py
+      - name: Build portable game ZIP and checksums
+        run: |
+          VERSION="$(cat VERSION)"
+          mkdir -p release
+          cp index.html release/index.html
+          cp README.md release/README.md
+          cd release
+          zip -9 "Little_Trading_Post_v${VERSION}.zip" index.html README.md
+          sha256sum "Little_Trading_Post_v${VERSION}.zip" > SHA256SUMS.txt
+      - name: Create or update release tag from main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(cat VERSION)"
+          TAG="v${VERSION}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists, avoiding duplicate publish."
+          else
+            gh release create "${TAG}" "release/Little_Trading_Post_v${VERSION}.zip" release/SHA256SUMS.txt --title "The Little Trading Post ${TAG}" --notes-file CHANGELOG.md --target "${GITHUB_SHA}"
+          fi
