@@ -1,0 +1,944 @@
+# THE LITTLE TRADING POST v5
+
+## THE LIVING WORLD & PLAYFEEL OVERHAUL
+
+### MISSION
+
+Continue developing **The Little Trading Post** from the attached v4 project ZIP.
+
+You are the lead game designer, gameplay engineer, pixel artist, UX designer, simulation engineer, narrative designer and QA lead.
+
+This is a substantial correction and expansion of the existing playable game.
+
+**DO NOT build a new game, replace it with a mockup, or merely write another specification. Modify the real v4 source and deliver a working v5 build.**
+
+The player has tested v4 and identified serious shortcomings. These observations have priority over speculative new features.
+
+The central design requirement is:
+
+**Every meaningful action should visibly happen in the game world, with actual consequences. The game must stop feeling like a large collection of buttons that produce text and change numbers.**
+
+Preserve all existing functional gameplay unless a feature is explicitly redesigned or removed after an evidence-based audit.
+
+---
+
+# 1. READ THE ENTIRE PROJECT AND RECONCILE ALL PREVIOUS REQUESTS
+
+Before implementing anything, inspect the complete v4 ZIP.
+
+Read:
+
+- `index.html`
+- `extension-v3.js`
+- `extension-v4.js`
+- `AUDIT.md`
+- `AUDIT_V4.md`
+- `DEPENDENCIES.md`
+- `DEPENDENCIES_V4.md`
+- `RESEARCH.md`
+- `RESEARCH_V4.md`
+- `ROADMAP_V4.md`
+- `ITEM_CATALOG.md`
+- `ITEM_CATALOG.csv`
+- `ITEM_CATALOG_V4.csv`
+- `ITEM_USE_AUDIT.md`
+- `DROP_WEIGHTS.md`
+- `ITEM_DROP_RATES.csv`
+- All existing test scripts and results
+- Frozen Bear Drugs Encyclopedia Edition 1.0
+
+Also reconcile every earlier request in this conversation, including the original premise and the v2, v3 and v4 directives.
+
+Create a requirements ledger containing:
+
+**Requirement · First requested in · Current implementation · Verified behavior · Deficiencies · Decision needed · Priority · Acceptance test**
+
+Specifically identify:
+
+- Forgotten requests.
+- Deferred work that was never resumed.
+- Features marked complete despite partial behavior.
+- Regressions from earlier versions.
+- Design choices made without player approval.
+- Missing interactions between systems.
+- Features that only exist in menus.
+- Functions no longer used.
+- Redundant or distracting systems.
+
+Preserve explicitly approved decisions and distinguish them from previous assistant proposals.
+
+Do not claim the project has fulfilled a request merely because a button with the requested name exists.
+
+---
+
+# 2. FULL-SCREEN MAIN MENU REDESIGN
+
+The existing main menu is unacceptable as a final design.
+
+It looks like an overlay placed over the running game.
+
+**The main menu must occupy the entire screen and completely replace the visible gameplay interface.**
+
+Research the title-screen design of Minecraft, Stardew Valley and other polished games.
+
+Requirements:
+
+- A full-window original woodland scene, illustration, or animated cinematic background.
+- No gameplay dashboard, trading panel, HUD or current game world visible behind the title screen.
+- Large, distinctive game title.
+- **New Game, Continue and Load Game** as the three dominant, centered buttons.
+- Smaller Settings, How to Play, Credits and Exit/Close controls.
+- Cohesive typography, accessible contrast and pixel-art styling.
+- Subtle animation, optional music and interface sounds.
+- Clear keyboard navigation.
+- Continue disabled or explained when no save exists.
+- A distinct loading/transition experience.
+- A genuinely functional save selection screen.
+
+The menu should feel like the entrance to an indie game, not a website modal.
+
+---
+
+# 3. CHARACTER CREATOR CORRECTIONS
+
+Revise the character creator according to the player's current rules.
+
+### Gender and pronouns
+
+For this game's fictional setting, offer:
+
+- Male — he/him
+- Female — she/her
+
+Pronouns are determined by the chosen gender; remove the separate pronoun selector and its other options.
+
+Maintain consistent dialogue generation.
+
+### Naming
+
+Do not permit the player to choose the name of any existing named character.
+
+Validate against the full NPC registry, including Mama and future adult characters.
+
+Names must be case-insensitively unique and safely handled in dialogue and save files.
+
+### Temperament
+
+Add **Evil** as a selectable temperament.
+
+An Evil starting cub should begin with substantial distrust, resentment or hostility from the community.
+
+NPCs should actually behave differently: avoid the player, refuse some trades, gossip, complain to parents, or challenge the player.
+
+This must be more than a cosmetic character-selection label.
+
+Retain other useful temperaments and customize reactions appropriately.
+
+### Appearance
+
+Make all listed appearance choices actually change the rendered bear sprite in every applicable direction and animation.
+
+---
+
+# 4. CRITICAL UI/UX REDESIGN — REMOVE THE CLUTTER
+
+The screenshots demonstrate serious information-density problems.
+
+The game currently has too many simultaneously visible elements, with small typography and inconsistent fonts.
+
+Research readable indie RPG interfaces, especially Stardew Valley, Animal Crossing, Recettear and Moonlighter.
+
+## Visual requirements
+
+- Use a cohesive pixel-art interface with two intentional typographic roles: decorative headings and readable body text.
+- Eliminate inconsistent monospace/sans-serif combinations where they do not serve a deliberate hierarchy.
+- Increase important labels, buttons and dialogue text.
+- Add more color outside the world viewport: forest greens, honey gold, warm browns, berry red, muted blue and useful rarity accents.
+- Avoid making every panel the same beige rectangle.
+- Give individual features a distinct visual identity without overwhelming the screen.
+- Prioritize the playable world.
+- Make essential actions larger and easier to identify.
+- Support UI scaling.
+- Keep inventory easily accessible.
+- Respect desktop and mobile layouts separately.
+
+## Remove the permanent right-side dashboard
+
+During ordinary exploration, the player should see the world, essential needs, context prompts and a compact inventory.
+
+Bartering UI should appear only while bartering.
+
+Mama's family UI should appear only during an appropriate family interaction.
+
+Construction UI should appear when using the player's trading post, construction tools or a relevant workstation.
+
+The full relationship encyclopedia, detailed market statistics, activity history and developer tools should not occupy permanent screen space.
+
+Retain functionality, but organize it more appropriately.
+
+## Menu audit
+
+For every existing menu, decide whether it belongs in:
+
+- Main HUD.
+- Context interaction.
+- Inventory.
+- Journal.
+- Pause menu.
+- Trading-post management.
+- Developer tools.
+- A specialized location or workstation.
+
+Remove redundant entry points and obsolete UI.
+
+Do not silently delete gameplay features.
+
+---
+
+# 5. CENTRALIZED POPUP AND NOTIFICATION SYSTEM
+
+The screenshots show UI elements overlapping or competing.
+
+This is a systemic layout problem.
+
+Implement a centralized interface manager for:
+
+- Blocking dialogue windows.
+- Nonblocking speech bubbles.
+- Inventory panels.
+- Minigames.
+- Tooltips.
+- Floating item notifications.
+- Quest notifications.
+- Warning messages.
+- Rare encounter scenes.
+
+Define clear layering and exclusive-modal rules.
+
+Only one blocking gameplay modal may be active at a time.
+
+Do not allow a fishing window, speech bubble, location discovery notice and notification bar to stack over the same content.
+
+Support notification queues, priorities, expiration and safe positioning.
+
+Dialogue should not be duplicated simultaneously in a speech bubble and the bottom caption.
+
+Test every pair of major interface systems for collision and inappropriate overlap.
+
+---
+
+# 6. FIX PLAYER MOVEMENT AND WORLD INTERACTION
+
+The previous game places the player at the trading post near or inside the stall collision boundary.
+
+Specifically inspect the spawn near `(193,346)` and the stall collision region.
+
+Fix spawning inside obstacles.
+
+Test every spawn and return location.
+
+Ensure the player can move in all appropriate directions and reach all intended destinations.
+
+Implement:
+
+- Continuous keyboard movement.
+- Reliable click-to-move.
+- Proper collision geometry.
+- Correct character facing.
+- Original bear-like wobble and walking animations.
+- Scene boundaries and exit transitions.
+- Real path accessibility.
+- Movement around furniture and characters.
+- Movement interruption when a blocking modal opens.
+
+## Accurate interaction highlights
+
+**Stop using generic rectangular outlines for every object.**
+
+Interaction feedback should follow the actual visible object.
+
+Use appropriate pixel masks, polygon boundaries, collision shapes, or tight object-specific outlines.
+
+A berry bush should highlight as a bush.
+
+A rock should highlight as a rock.
+
+The highlighted area should accurately communicate which object will respond when the player presses E.
+
+Add clear interaction labels and range indicators.
+
+## Physical response requirements
+
+Foraging, eating, drinking, giving gifts, wrestling, trading, building, storing items and showing off treasures need visible animations.
+
+An action should produce:
+
+1. An appropriate character pose or movement.
+2. An observable change to the object or environment.
+3. An audio or visual confirmation.
+4. A state change.
+5. Any appropriate NPC reaction.
+6. A history entry.
+
+Use one coherent interaction framework.
+
+Do not animate a cub doing something while physically standing far away from the object.
+
+---
+
+# 7. TUTORIAL REWORK — PLAYER DECISION REQUIRED FOR LENGTH
+
+The player is undecided about making the tutorial longer and about how quickly advanced systems should be introduced.
+
+**Do not silently decide the tutorial duration or force a prolonged tutorial.**
+
+Evaluate three designs:
+
+- A short guided introduction covering movement, Mama and first trade.
+- A longer guided first morning or first day.
+- A short introduction followed by optional contextual teaching over several days.
+
+Provide a recommendation with estimated player effort, tradeoffs and usability-test criteria.
+
+Preserve player control over the final pacing decision.
+
+Independently of tutorial duration, simplify the initial interface.
+
+Investigate feature discovery through contextual exposure or unlocking.
+
+Do not permanently lock important gameplay systems without approval.
+
+Allow replaying guidance and skip options.
+
+Fix tutorials that can become impossible because an NPC leaves, an item is lost, or an objective is completed out of sequence.
+
+---
+
+# 8. AGE, COGNITION, VOCABULARY AND FAMILY RULES
+
+Use this fictional developmental framework:
+
+**Three chronological bear months correspond approximately to one human developmental year.**
+
+An eleven-month-old cub therefore has a developmental reference point around three years and eight months.
+
+This affects:
+
+- Speech.
+- Vocabulary.
+- Sentence complexity.
+- Emotional regulation.
+- Reasoning.
+- Memory.
+- Attention.
+- Physical abilities.
+- Trading comprehension.
+- Dangerous decisions.
+- Dependency on adult bears.
+
+Do not give every cub sophisticated adult speech and flawless business intelligence.
+
+The player may still make complex strategic choices, but in-world character communication and behavior should respect the developmental system.
+
+Document and resolve contradictions between the sophisticated player economy and juvenile cub cognition.
+
+## Equal sibling foundations
+
+Fern and Pebble are both biological littermates of the player.
+
+They must share the same foundational sibling systems before receiving distinct personalities and stories.
+
+Shared systems include:
+
+- Family loyalty.
+- Shared childhood history.
+- Sleeping together.
+- Rivalry for Mama's attention.
+- Teasing.
+- Borrowing.
+- Arguments.
+- Protectiveness.
+- Promises.
+- Snitching.
+- Reconciliation.
+- Family consequences.
+
+Then add distinct behavior to Fern and Pebble individually.
+
+Other cubs should also have their own families and siblings where appropriate.
+
+---
+
+# 9. DISTINCT FAMILIES, MOTHERS, DENS AND HOMES
+
+Expand the community's family simulation.
+
+Other cubs should have real homes, not all exist in generic open woodland areas.
+
+Introduce distinct family households and spatial interiors.
+
+Each home should reflect its inhabitants.
+
+Different mothers can have different appearances, routines, temperaments and parenting styles.
+
+They should:
+
+- Care for their own cubs.
+- Set household rules.
+- React to injuries or conflict.
+- Intervene in bullying.
+- Receive reports about the player.
+- Recognize family friendships and rivalries.
+- Remember incidents.
+
+Cubs should be able to tell their own Mama about another cub's behavior.
+
+Avoid making all adult bears interchangeable copies of the player's mother.
+
+Prioritize depth and distinctive behavior over producing many empty interiors.
+
+---
+
+# 10. RELATIONSHIP AND DIALOGUE REVAMP
+
+Current relationships are not sufficiently dynamic.
+
+Rebuild the interaction experience around visible characters and context.
+
+Use Stardew Valley-like dialogue presentation as a reference:
+
+- Portrait of the speaking character.
+- Character name.
+- Clear dialogue text.
+- Player response choices.
+- Contextual negotiation options.
+- Observable expressions or poses.
+- Memory and relationship effects.
+
+Do not duplicate the same text in multiple screen regions.
+
+## Persistent relationship dynamics
+
+Implement trust, affection, fear, resentment, jealousy, rivalry, loyalty and remembered obligations where appropriate.
+
+NPCs should react to prior conduct.
+
+Examples:
+
+- Pebble trades at the rival trading post, and the player can confront him.
+- Fern tells Mama the player threatened another cub.
+- A cub becomes envious of a rare item.
+- A sibling secretly borrows something.
+- Mama favors another cub temporarily.
+- An older cub is impressed by a particular accomplishment.
+- A bullied cub recruits friends or seeks adult protection.
+
+Avoid repetitive score farming through hugs, apologies or promises.
+
+NPCs may initiate social events independently.
+
+## Physical proximity rules
+
+Close local conversations, trading, play, threats, gifts and object examination must require real physical conditions.
+
+Opening an encyclopedia or More Panels must not allow remote manipulation of another character.
+
+Test every previously exposed exploit path.
+
+---
+
+# 11. COMPLETE BARTERING AND NEGOTIATION REVAMP
+
+Bartering is one of the game's signature mechanics and must receive special attention.
+
+Replace inconsistent tab-driven cub selection with a structured interaction:
+
+**Approach cub → Speak → Ask to barter → Examine offers → Negotiate → Accept/refuse/counteroffer → Visible exchange.**
+
+Use a larger dedicated negotiation interface.
+
+Show both traders and their possessions.
+
+Separate available possessions from private, reserved, sentimental and hidden stock.
+
+Make personal valuation legible without exposing every internal AI variable.
+
+When an NPC refuses, explain the motivation through character-appropriate dialogue.
+
+Possible reasons:
+
+- Insufficient subjective value.
+- Sentimental attachment.
+- Already owns a similar item.
+- Distrust of the player.
+- Item is reserved.
+- Wants something else.
+- Doesn't want to trade right now.
+- Suspects deception.
+- Another promised deal takes priority.
+
+Implement counteroffers, persuasion, favors, credit or promises where appropriate.
+
+Preserve the original premise: there is no universal item price.
+
+NPCs trade independently and can refuse to participate in the player's market.
+
+Add meaningful alternatives to simply making a higher offer.
+
+## Rival trading post
+
+Allow the player to discover and react when siblings trade at a competitor's post.
+
+Include anger, jealousy, bargaining, apologies, loyalty conflicts and potential reconciliation.
+
+Also explore sabotage of the rival trading operation, with consequences.
+
+Potential organized-crime escalation involving hired thugs, abduction, ransom or lethal attacks is a **proposal requiring separate design approval**; do not silently treat it as implemented canon.
+
+---
+
+# 12. REAL SLEEPING, CURFEWS AND MAMA INTERVENTION
+
+The player needs a clear and physically simulated way to sleep.
+
+Implement:
+
+- A real sleeping nest.
+- Lying-down and sleeping poses.
+- Actual nighttime-to-morning progression.
+- Energy recovery.
+- Family bedtime routines.
+- Sibling sleeping interactions.
+- Dreams or rare nighttime events where appropriate.
+- Sleep deprivation.
+- Parental curfews.
+- Sneaking out.
+- Mama finding or searching for a missing cub.
+
+Mama may physically escort or carry the player back home when appropriate.
+
+The player can resist, hide, argue, explain themselves or cooperate.
+
+Choices affect trust, fatigue, discipline and subsequent events.
+
+Do not turn bedtime into a generic "Next Day" button.
+
+---
+
+# 13. REALISTIC NPC MOVEMENT AND WORLD PATHS
+
+NPCs should not teleport between scenes as soon as the daily phase changes.
+
+Create actual intentions, routes and visible departures.
+
+Characters should walk to scene exits, travel along the map's path network, and enter their destinations.
+
+The world map must visually represent the actual connected paths, not just abstract menu teleportation.
+
+Off-screen simulation may simplify continuous movement, but time, route and location must remain consistent.
+
+Players should be able to encounter or intercept travelers where appropriate.
+
+Make sure NPCs cannot occupy two locations simultaneously.
+
+Preserve their inventories, memories, needs and intentions while traveling.
+
+---
+
+# 14. PANDA WANDERING TRADER & PHYSICAL HONEY CURRENCY
+
+Redesign the criminal wandering trader as a distinctive **adult giant panda**.
+
+He must have original panda-specific pixel art, adult proportions, expressive poses and an independent movement schedule.
+
+Do not use the ordinary brown bear sprite with a larger scale.
+
+His presence should be discoverable through actual rumors, sightings, travel and encounters.
+
+He must not automatically appear everywhere through a menu.
+
+## Replace coins with honey
+
+The player's requested currency is honey, not human coins.
+
+Design a physically conserved honey economy.
+
+Honey can be:
+
+- Traded.
+- Stored.
+- Carried.
+- Gifted.
+- Consumed.
+- Hoarded.
+- Spilled.
+- Stolen.
+- Used in recipes.
+
+Account for the distinction between raw honey, honeycomb and honey held in containers.
+
+A cub who eats too much honey may become overfull, sticky, uncomfortable or vomit.
+
+Sticky paws may affect object handling, social interactions or Mama's response.
+
+Eating honey must reduce the actual amount available for trading.
+
+Trade transactions must not duplicate honey.
+
+Build this as a connected system, not a collection of disconnected status effects.
+
+The panda's funds, inventory and pricing must be finite and auditable.
+
+Preserve Bear Drugs Edition 1.0 canon for the substances and their risks.
+
+Do not make illegal trading the dominant guaranteed strategy.
+
+---
+
+# 15. UNIQUE NEWBORN CHARACTER AND LONG-TERM CARE
+
+The orphaned newborn needs a unique sprite, not a resized ordinary cub.
+
+Research actual newborn brown bear proportions.
+
+Implement age-appropriate:
+
+- Tiny body.
+- Closed or limited-vision eyes as appropriate to age.
+- Small limbs.
+- Vulnerability.
+- Distinct sleeping and crying poses.
+- Carrying and warmth animations.
+- Milk dependence.
+- Proper adult care.
+
+Make the newborn persist as an individual character with needs, memories appropriate to development, and ongoing consequences.
+
+The newborn must not become an ordinary inventory stack.
+
+Introduce meaningful decisions about bringing the cub to Mama, hiding it, and arranging care.
+
+Avoid an event that concludes immediately with one modal and a reputation gain.
+
+---
+
+# 16. ROAD ACCIDENTS AND CONSEQUENCES
+
+The player's requested harsh road rule is:
+
+**A direct vehicle collision is immediately fatal.**
+
+Implement a visible, understandable collision sequence:
+
+- Actual moving vehicle.
+- Accurate collision detection.
+- The cub knocked onto its side.
+- A restrained, non-graphic blood pool rendered beneath the sprite.
+- Time stopping or an appropriate end-state transition.
+- A coherent death screen with load/restart options.
+- Persistent consequences where applicable.
+
+The event must not depend on an arbitrary extra collision after the first hit.
+
+Allow a non-graphic presentation option while preserving the serious gameplay outcome.
+
+NPCs and Mama should react based on knowledge and location.
+
+---
+
+# 17. DEEPEN THE RIVER, FISHING AND EXPLORATION
+
+Improve swimming physics, current, drowning danger and rescue behavior.
+
+Make Mama's fishing lesson an actual shared activity, not a location transfer followed by a skill increase.
+
+Add meaningful fish variation and a possible fishing contest.
+
+Improve environmental landmarks and discovery.
+
+Remove the feeling that "exploration time" is an arbitrary punishment or unearned reward limiter.
+
+Instead, model:
+
+- Genuine depletion.
+- Hidden objects already collected.
+- Weather.
+- Opportunity cost.
+- Physical energy.
+- NPC resource competition.
+- Distinct activities requiring different equipment.
+
+Do not invent a reason that the player suddenly cannot explore if the environment still visibly offers meaningful interactions.
+
+---
+
+# 18. REBUILD THE CONSTRUCTION SYSTEM
+
+Current construction is too dependent on button-driven spawning.
+
+Design a physical placement and construction interface.
+
+A player should:
+
+1. Choose a structure.
+2. Inspect required materials.
+3. Select an actual valid place.
+4. See a ghost preview.
+5. Place the structure.
+6. Watch construction.
+7. Consume materials.
+8. Observe the finished object.
+9. Use it.
+10. Observe other cubs using it.
+
+Implement spatial restrictions, collision and functional amenities.
+
+Examples include seats, shelves, stalls, storage, pathways, decorations, workstations and shelters.
+
+Different amenities should change what NPCs actually do, not merely produce passive bonuses.
+
+---
+
+# 19. REWORK THE NOTICE BOARD AND MARKET GATE
+
+The current Notice Board and Market Gate largely duplicate the world-map function.
+
+Give them distinct roles.
+
+### Notice Board
+
+Provide active commissions, wanted objects, rumors, family news, market events and notices.
+
+Players can accept or ignore opportunities.
+
+Notices must originate from actual simulated events or NPC demands.
+
+### Market Gate
+
+Manage property access, trader permissions, stall fees, closures, membership and disputes.
+
+Make access policies physically meaningful.
+
+NPCs may pay, negotiate, refuse or go elsewhere.
+
+Audit every structure and interaction for comparable redundant behavior.
+
+---
+
+# 20. EVENT SYSTEM WITH SEPARATE RARITY
+
+Create a formal event framework.
+
+Do not confuse event rarity with item rarity.
+
+Propose tiers such as:
+
+Common, Uncommon, Rare, Epic, Legendary, Mythic.
+
+An event should depend on context, character state, history and eligibility—not merely an arbitrary random number.
+
+Examples:
+
+**Common:** sibling teasing, ordinary visitor, misplaced toy.
+
+**Uncommon:** argument, unexpected gift, minor competition.
+
+**Rare:** valuable discovery, family dispute, special visitor.
+
+**Epic:** major betrayal, unusually important trade, dangerous rescue.
+
+**Legendary:** transformative relationship event or historic discovery.
+
+**Mythic:** orphaned newborn encounter or another exceptionally consequential one-time story.
+
+Document event frequency, prerequisites, exclusivity, outcomes and cooldown logic.
+
+Propose specific probabilities for approval rather than silently changing the existing item rarity system.
+
+Give rare events persistent aftermath and multiple possible responses.
+
+Implement deterministic developer triggers for QA.
+
+---
+
+# 21. IMPROVE EACH LOCATION AND ITS ART
+
+Every scene needs more distinctive environmental detail and meaningful activities.
+
+Prioritize making existing areas genuinely rich.
+
+Requirements include:
+
+- Distinct silhouettes and landmarks.
+- More environmental colors.
+- More detailed pixel art.
+- Clear pathways and exits.
+- Useful interactable objects.
+- Real object-specific hitboxes.
+- Character-scale consistency.
+- Correct sprite layering.
+- Environmental animation.
+- Appropriate sound design.
+- Contextual social events.
+
+Make the picnic spot visually charming and functional.
+
+Improve readability of scene labels and eliminate overlap.
+
+Avoid generic trees repeated everywhere without variation.
+
+All new characters must have coherent original art, appropriate body shape and age-specific appearance.
+
+Do not let adding art break collisions, interaction prompts, camera framing or UI placement.
+
+---
+
+# 22. EVERY FEATURE MUST INTERACT WITH OTHER SYSTEMS
+
+Use a causal dependency model.
+
+A player action should have the possibility of influencing several related systems.
+
+For example:
+
+**Panda pays honey → player carries honey → player eats too much → paws become sticky → item handling changes → Fern notices → Fern tells Mama → Mama investigates where the honey came from → panda's secret commerce becomes a family problem.**
+
+Another example:
+
+**Pebble trades at rival market → player becomes jealous → confrontation → argument → Pebble tells Fern → Fern decides whether to intervene → Mama may hear about it → sibling trust changes → future trades and shared secrets change.**
+
+These are illustrative chains, not mandatory scripted outcomes.
+
+Implement systemic links so outcomes arise from state and character intentions.
+
+Prioritize agency, autonomy and consistency over random drama.
+
+---
+
+# 23. REMOVE LEGACY CODE AND VERIFY SAVE COMPATIBILITY
+
+Refactor the inherited v1–v4 code carefully.
+
+Audit:
+
+- Overridden functions.
+- Duplicated event handlers.
+- Obsolete menus.
+- Unused variables.
+- Dead branches.
+- Outdated comments.
+- Conflicting styles.
+- Redundant render loops.
+- Inconsistent save schemas.
+- UI elements that no longer perform useful actions.
+- Remote interactions.
+- Inventory transfer logic.
+- Character state leaks.
+
+Move toward tested modules without breaking the offline standalone HTML distribution.
+
+Implement migration tests with representative v2, v3 and v4 saves.
+
+Do not claim save compatibility without real-browser evidence.
+
+Preserve original versions and backups.
+
+---
+
+# 24. COMPLETE PLAYTEST, QA AND EXPLOIT HUNT
+
+Run meaningful automated and manual browser tests.
+
+Test every visible control and every feasible state-changing action.
+
+Create a coverage matrix.
+
+Verify:
+
+- Full-screen title menu.
+- Character creator validation.
+- Evil temperament.
+- Sibling parity.
+- Trading-post spawn accessibility.
+- Movement from all locations.
+- Object-specific interaction outlines.
+- No overlapping blocking windows.
+- No duplicate dialogue.
+- Correct UI scaling.
+- No cross-location interaction exploits.
+- Real barter negotiation and refusal reasons.
+- Event eligibility and persistence.
+- Real sleep and next-day progression.
+- Mama's bedtime intervention.
+- Panda trader location and inventory.
+- Honey conservation and eating effects.
+- Newborn appearance and care.
+- One-hit lethal road collision.
+- Correct blood layer beneath sprite.
+- Fishing, swimming and rescue.
+- Physical construction and resource costs.
+- Notice Board and Market Gate functionality.
+- NPC travel and single-location invariants.
+- Save/load and migration.
+- All previous mechanics that may have regressed.
+
+Use adversarial tests for resource duplication, NPC teleportation, remote gifting, repeated reputation farming, time skipping, inaccessible spawns, trading with missing stock, and overlapping popup states.
+
+Run a normal multi-day playthrough without artificially restoring needs.
+
+Separately run longer simulation stress tests.
+
+Record actual results, not predicted outcomes.
+
+Classify tests as PASS, FAIL, PARTIAL or UNTESTED.
+
+Do not pretend that running a handful of smoke tests proves the whole game is balanced or enjoyable.
+
+---
+
+# 25. REQUIRED DELIVERABLES
+
+Provide:
+
+1. Updated playable v5 HTML game.
+2. Complete project ZIP.
+3. Unmodified v4 backup.
+4. Main menu screenshot.
+5. Revised character creator screenshot.
+6. Clear, uncluttered gameplay screenshot.
+7. Full negotiation interface screenshot.
+8. Sibling interaction screenshot.
+9. Panda trader screenshot.
+10. Newborn-specific sprite screenshot.
+11. Representative construction and environmental interaction screenshots.
+12. Previous-request reconciliation ledger.
+13. Feature audit with implemented/partial/missing states.
+14. Source-code cleanup report.
+15. UI and overlap audit.
+16. Relationship/AI audit.
+17. Event rarity proposal and balance notes.
+18. Dependency and gameplay consequence audit.
+19. Automated tests and exploit findings.
+20. Research findings with sources.
+21. Known limitations.
+22. Updated development roadmap.
+
+Preserve all useful existing gameplay.
+
+Do not add filler content or meaningless items just to make the feature count larger.
+
+If the complete request cannot be fulfilled in one execution, finish and test the highest-impact features first, produce a genuine playable improvement, and explicitly identify what remains incomplete.
+
+---
+
+# 26. FINAL QUALITY STANDARD
+
+The Little Trading Post should feel like a living woodland inhabited by autonomous baby bears, not a browser dashboard.
+
+The player should be able to physically wake up, interact with Mama, tease or fight with siblings, collect and use treasures, trade through dialogue, build an actual market, observe what other cubs do, experience consequences, and return home to a family that remembers their actions.
+
+The game may be cute, funny, mischievous, dangerous, tragic or occasionally very dark, but its world must remain causally coherent.
+
+**Player additions and corrections in this v5 directive take priority over the previous roadmap. Preserve undecided choices, especially tutorial duration and unapproved extreme rival-crime branches, rather than making those decisions silently.**
+
+Implement, test, audit and deliver the most polished playable version possible. Do not stop at writing a plan.
