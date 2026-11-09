@@ -4,32 +4,32 @@
     {
       "file": "Little_Trading_Post_v1.zip",
       "bytes": 22415,
-      "sha256": "f6dce0e67f38c5606b4b6edbf820808adbd76a1536b703f6c6014514c270c944"
+      "sha256": "b8e2103fc9de3288478f6b716632ec8a846ab78c19927fe63c041c512bc7e911"
     },
     {
       "file": "Little_Trading_Post_v2.zip",
       "bytes": 49579,
-      "sha256": "3b2e7b07c4bfbb0edcdc457b69e5248abbedaebaf28fe558ef63be72d2823065"
+      "sha256": "63a48f80e2329a4159f8805635e81faf3acca2252d5cdd890aa0f521efdb6238"
     },
     {
       "file": "Little_Trading_Post_v3.zip",
       "bytes": 84453,
-      "sha256": "bef5b831e26328c1c72dd45ab549f906bf2d792bc83f5162b0261374b6a7156b"
+      "sha256": "bd3a0c17419d38d80e46fca51a91f9542cc52ca1ecff86e112c36e69208879e1"
     },
     {
       "file": "Little_Trading_Post_v4.zip",
       "bytes": 108428,
-      "sha256": "bb0db381c6bb66687a7bab9c607a59c24a1fc86b140505e5189855f1a593e59b"
+      "sha256": "e00d15217e838764f9d8b73b9da93ccf0a8494e255fda363c6d5873ab7b63473"
     },
     {
       "file": "Little_Trading_Post_v5.zip",
-      "bytes": 123823,
-      "sha256": "cdb5d8c1834feca9af67d5946ff881a51ae0591b74b3f696ff5ca1450ae032f8"
+      "bytes": 128582,
+      "sha256": "83d7366e0a5c56a3e6f7a9db3110595bb084e27140d3f6fd44fd29dcf38e2fd9"
     },
     {
       "file": "Little_Trading_Post_COMPLETE_SOURCE.zip",
-      "bytes": 428153,
-      "sha256": "24ededf064b3502072d27c81184dfc7ca10d73088ae8e73e294439f8e4892773"
+      "bytes": 1352046,
+      "sha256": "8807b2009705910b5e04ae2aa1b597b0c3e61e184a49f13d0d3ebb979acc08f9"
     }
   ]
 }
