@@ -1390,7 +1390,7 @@ function v4MotionFrame(ms){if(!state||v4MenuIsOpen||v4CreatorIsOpen||paused||sta
  if(dx||dy){const length=Math.hypot(dx,dy)||1,spd=(v4Keys.has('shift')?142:98)*dT;dx=dx/length*spd;dy=dy/length*spd;const x=state.playerPos[0],y=state.playerPos[1];if(!v4Blocked(x+dx,y))state.playerPos[0]=clamp(x+dx,32,738);if(!v4Blocked(state.playerPos[0],y+dy))state.playerPos[1]=clamp(y+dy,133,410);playerMoving=true;state.pose='walk';v4MoveEffort+=spd;if(v4MoveEffort>80){v4MoveEffort=0;state.needs.energy=clamp(state.needs.energy-.24);state.phaseActs+=.025;}}else playerMoving=false;
  const nearest=v4Nearest(120);v4PromptTarget=nearest;const hud=$('v4Interact');if(state.options?.help&&nearest){hud.innerHTML=`<strong>[E] ${h(nearest.label)}</strong> · ${Math.round(nearest.d)}px away`;}else hud.innerHTML='<strong>WASD</strong> Walk · <strong>E</strong> Interact · <strong>M</strong> Map';
  if(state.location==='trail')v4UpdateCars(dT);if(state.location==='river')v4CheckWater(dT);
- v4CheckOrphanNeeds(dT);
+ v4CheckOrphanNeeds(dT);v51Camera();
 }
 function v4Nearest(maxDist=130){const ps=state.playerPos,loc=state.location;const entries=[...WORLD[loc].objects.map(o=>({kind:'object',x:o[1],y:o[2],label:o[0],obj:o,id:o[3]})),...state.npcs.filter(n=>n.location===loc).map(n=>({kind:'npc',x:n.worldPos?.[0]||0,y:n.worldPos?.[1]||0,id:n.id,label:'Talk to '+n.name}))];if(loc==='den')entries.push({kind:'mama',x:563,y:242,label:'Talk to Mama'});if(loc==='trail'&&v4TraderHere())entries.push({kind:'trader',x:592,y:308,label:'Speak with wandering trader'});if(loc==='trail'&&state.orphan.status==='found')entries.push({kind:'orphan',x:405,y:320,label:'Help the abandoned newborn'});
  return entries.map(o=>({...o,d:Math.hypot(ps[0]-o.x,ps[1]-o.y)})).filter(o=>o.d<maxDist).sort((a,b)=>a.d-b.d)[0]||null;}
@@ -1566,6 +1566,11 @@ const v5OldNegotiate=negotiate;negotiate=function(){const n=npc();
    const getting=Object.entries(wantedBefore).map(([id,n])=>n+' '+(items[id]?.name||id)).join(', ');
    tradeResult(`${n.name}: “Done! You gave ${giving} and got ${getting}. Thank you!”`,true);
    say(n.id,'Paws shaken! What a deal!');setPose('carry',1350);v5WorldEffect('↔ TRADED!');
+   if(n.worldPos){
+     const give=Object.keys(offeredBefore)[0],take=Object.keys(wantedBefore)[0];
+     v51Flight(give,state.playerPos,n.worldPos,1000);
+     v51Flight(take,n.worldPos,state.playerPos,1200);
+   }
  }if(state.trades===before){const reason=v5Reason(n);tradeResult(`${n.name}: ${reason}`,false);log(`Negotiation refusal explained: ${reason}`);}else if(id){n.memory.unshift(`D${state.day}: Received ${items[id].name} from ${v4Name()}.`);state.mama.suspicion=clamp(state.mama.suspicion+5);log('Contraband trade is a potential family and legal concern.');}save();render();};
 // Panda trader uses conserved honey, not coins, and is physically present only on the trail.
 function v5TraderPrice(id,kind){const raw=base[id]||8;return kind==='buy'?Math.max(3,Math.ceil(raw/7)+3):Math.max(1,Math.ceil(raw/12));}
@@ -1665,6 +1670,121 @@ const v5PreviousSearchMother=checkMother;checkMother=function(){
 };
 window.LittleTradingPost={...window.LittleTradingPost,restorationConversations:true};
 
+
+
+/* v5.1 world-first usability and visible interaction layer. */
+const v51Css=document.createElement('style');
+v51Css.textContent=`
+#v51Needs{display:flex;align-items:center;gap:8px;background:#e0e9d3;color:#1c4938;border:2px solid #456b56;border-top:0;padding:5px 8px;font:700 12px Trebuchet MS,Arial,sans-serif;min-height:39px}
+#v51NeedStats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;flex:1}
+.v51Need{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}.v51Need b{font-size:12px}.v51Need strong{font-size:12px;margin-left:auto}.v51NeedTrack{height:7px;background:#b9cdb2;border:1px solid #8ba48b;flex:1;min-width:20px}.v51NeedTrack i{height:100%;display:block;background:#609879}
+#v51NeedDetails{border:1px solid #517a59;background:#f9f2dc;color:#274936;padding:5px 8px;cursor:pointer;font:700 11px Trebuchet MS,Arial,sans-serif}
+#vitals{display:none!important}
+.worldFrame{isolation:isolate}
+.v51TutorialBeacon{position:absolute;right:10px;top:9px;z-index:12;background:#fff0b8;color:#234635;border:2px solid #547655;padding:7px 10px;pointer-events:none;font:700 12px Trebuchet MS,Arial,sans-serif;max-width:42%}
+@media(max-width:760px){
+ .leftColumn .v3Nav{order:2!important}.leftColumn .worldFrame{order:3!important}.leftColumn .worldHelp{order:4!important}.leftColumn .v3Hotbar{order:5!important}.leftColumn .v3Tools{order:6!important}
+ #v51Needs{order:1;min-height:43px;padding:6px 4px;gap:3px}
+ #v51NeedStats{gap:3px}.v51Need{display:block;text-align:center}.v51Need b{display:block;font-size:9px}.v51Need strong{font-size:12px}.v51NeedTrack{height:5px}.v51NeedTrack i{height:5px}
+ #v51NeedDetails{font-size:10px;padding:4px}
+ .worldFrame{height:384px!important;overflow:hidden!important}
+ #world{width:680px!important;height:384px!important;max-height:none!important;max-width:none!important;transition:none!important;object-fit:contain}
+ #v5Placement{width:680px!important;height:384px!important;max-width:none!important}
+ .v51TutorialBeacon{font-size:11px;max-width:55%}
+}
+`;
+document.head.appendChild(v51Css);
+const v51Needs=document.createElement('div');v51Needs.id='v51Needs';
+v51Needs.innerHTML='<div id="v51NeedStats" aria-label="Your bear cub needs"></div><button id="v51NeedDetails" aria-label="Show all needs and their effects">DETAILS</button>';
+document.querySelector('.leftColumn .ribbon').after(v51Needs);
+const v51Beacon=document.createElement('div');v51Beacon.className='v51TutorialBeacon';
+v51Beacon.setAttribute('aria-live','polite');
+document.querySelector('.worldFrame').appendChild(v51Beacon);
+function v51DisplayNeeds(){
+ if(!state)return;
+ const data=[['food','HUNGER'],['water','WATER'],['energy','ENERGY'],['comfort','COMFORT'],['health','HEALTH']];
+ $('v51NeedStats').innerHTML=data.map(([id,name])=>{
+  const num=Math.round(state.needs[id]||0);
+  const fill=num<=20?'#ae654c':num<=45?'#cfac55':'#649f73';
+  return `<div class="v51Need" title="${name}: ${num}/100"><b>${name}</b><div class="v51NeedTrack"><i style="width:${num}%;background:${fill}"></i></div><strong>${num}</strong></div>`;
+ }).join('');
+ const t=state.tutorial;
+ if(t?.enabled&&!t.completed&&state.location==='den'&&t.step===0){
+  v51Beacon.style.display='block';v51Beacon.textContent='✦ FIND MAMA · Click the large bear by the den exit, or walk to her and press E';
+ }else v51Beacon.style.display='none';
+}
+$('v51NeedDetails').onclick=()=>openModal('YOUR LITTLE CUB’S NEEDS',
+ '<p>Food and water keep you healthy. Energy affects traveling, gathering and playing. Comfort improves with affection and rest.</p><div class="v3ModalGrid">'+
+ [['food','Hunger'],['water','Water'],['energy','Energy'],['comfort','Comfort'],['health','Health']].map(([id,name])=>`<div><b>${name}</b>: ${Math.round(state.needs[id])}/100</div>`).join('')+
+ '</div>',[{text:'CLOSE',action:closeModal}]);
+const v51PreviousRender=render;render=function(){v51PreviousRender();v51DisplayNeeds();};
+function v51Camera(){
+ if(!state)return;
+ const mobile=window.matchMedia('(max-width:760px)').matches;
+ if(!mobile){world.style.transform='';if(typeof v5Placement!=='undefined')v5Placement.style.transform='';return;}
+ const frame=world.parentElement,w=world.getBoundingClientRect().width;
+ const x=state.playerPos?.[0]??384;
+ const tx=Math.max(frame.clientWidth-w,Math.min(0,frame.clientWidth/2-x*w/768));
+ const transform='translateX('+tx.toFixed(1)+'px)';
+ world.style.transform=transform;
+ if(typeof v5Placement!=='undefined')v5Placement.style.transform=transform;
+}
+const v51Transfers=[],v51SpriteCache=new Map();
+function v51ItemCanvas(id){
+ if(!id||!items[id])return null;
+ if(!v51SpriteCache.has(id)){
+  const canvas=document.createElement('canvas');canvas.width=24;canvas.height=24;
+  drawItem(canvas,id);v51SpriteCache.set(id,canvas);
+ }
+ return v51SpriteCache.get(id);
+}
+function v51Flight(id,from,to,duration=1050){
+ const now=performance.now();
+ v51Transfers.push({id,from:from.slice(),to:to.slice(),begin:now,end:now+duration});
+}
+function v51DrawFlights(c){
+ const now=performance.now();
+ for(let i=v51Transfers.length-1;i>=0;i--){
+   const f=v51Transfers[i];if(now>=f.end){v51Transfers.splice(i,1);continue;}
+   const t=(now-f.begin)/(f.end-f.begin),ease=t*t*(3-2*t);
+   const x=f.from[0]+(f.to[0]-f.from[0])*ease;
+   const y=f.from[1]+(f.to[1]-f.from[1])*ease-30*Math.sin(t*Math.PI);
+   c.save();c.fillStyle='#ffe2a0';c.globalAlpha=.65;c.fillRect(x-15,y-15,31,31);
+   const icon=v51ItemCanvas(f.id);
+   if(icon)c.drawImage(icon,x-12,y-12,24,24);
+   else {c.fillStyle='#d7b86e';c.fillRect(x-7,y-7,14,14);}
+   c.restore();
+ }
+}
+const v51PreviousScene=drawScene;drawScene=function(){
+ v51PreviousScene();if(!state||mapOpen)return;
+ if(state.tutorial?.enabled&&state.tutorial.step===0&&state.location==='den'){
+  ctx.save();ctx.strokeStyle='#ffe793';ctx.lineWidth=4;
+  ctx.setLineDash([6,4]);ctx.beginPath();ctx.ellipse(563,207,42,56,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+ }
+ v51DrawFlights(ctx);
+};
+const v51PreviousSocial=reactToSocial;reactToSocial=function(type){
+ const n=npc(),oldActs=state.phaseActs;
+ v51PreviousSocial(type);
+ if(n?.location===state.location&&state.phaseActs!==oldActs){
+   const from=state.playerPos,to=n.worldPos||[n.x,n.y];
+   if(['play','wrestle','chase','comfort','share','help'].includes(type)){
+      v51Flight('toyball',from,to,850);v51Flight('toyball',to,from,950);
+      v5WorldEffect(type==='wrestle'?'♥ PLAY!':'✦ '+type.toUpperCase());
+   }
+ }
+};
+const v51PreviousItemAction=itemAction;itemAction=function(id,action){
+ const before=quantity(state.inv,id),position=state.playerPos.slice();
+ const result=v51PreviousItemAction(id,action);
+ if(quantity(state.inv,id)<before){
+   const n=state.npcs.find(x=>x.id===state.chosen&&x.location===state.location);
+   const target=action==='gift'&&n?n.worldPos||[n.x,n.y]:[position[0]+10,position[1]-35];
+   v51Flight(id,position,target,850);
+ }
+ return result;
+};
 
 load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
 })();
