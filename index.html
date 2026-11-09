@@ -1335,8 +1335,9 @@ function v51RouteTo(dest){
  const [sx,sy]=v51Cell(...from);
  const source=sx+','+sy;
  const maxX=Math.floor((733-v51CX)/v51Step),maxY=Math.floor((404-v51CY)/v51Step);
- const starts=[dest.slice(0,2)];
- for(const rad of [16,32,48,64]){
+ const targetIsBlocked=v4Blocked(dest[0],dest[1]);
+ const starts=targetIsBlocked?[]:[dest.slice(0,2)];
+ if(targetIsBlocked)for(const rad of [16,32,48,64]){
    for(let i=0;i<12;i++){const t=i*Math.PI/6;starts.push([dest[0]+Math.cos(t)*rad,dest[1]+Math.sin(t)*rad])}
  }
  const targets=new Map();
@@ -1356,6 +1357,7 @@ function v51RouteTo(dest){
    }
  }
  if(!found)return false;
+ if(targetIsBlocked){const spot=targets.get(found);dest[0]=spot[0];dest[1]=spot[1];}
  const path=[];
  for(let key=found;key!==source;key=parents.get(key)){
    const [a,b]=key.split(',').map(Number);
