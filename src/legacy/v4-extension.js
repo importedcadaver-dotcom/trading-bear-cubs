@@ -96,22 +96,91 @@ function v4SelectedBag(id){if(!items[id]||!quantity(state.inv,id))return;selecte
 function v4ShowMore(){const choices=[['trade','Barter'],['craft','Make & Build'],['life','Cub Life'],['dialogue','Conversations'],['mama','Mama & Family'],['post','Manage My Post'],['journal','Field Notes'],['history','Full Event History']];openModal('YOUR WOODLAND NOTEBOOK','<p>Most details live here so the world is easier to see. Open a panel when you need it.</p><div class="v3ModalGrid">'+choices.map(([x,label])=>`<button data-panel="${x}">${label}</button>`).join('')+'</div>',[{text:'CLOSE',action:closeModal}]);document.querySelectorAll('[data-panel]').forEach(b=>b.onclick=()=>{closeModal();switchTab(b.dataset.panel);document.querySelector('.rightColumn').scrollIntoView({block:'nearest',behavior:'smooth'});});}
 function v4Controls(){openModal('CONTROLS & INTERACTIONS','<p><b>WASD / arrows:</b> Walk continuously. <b>Shift:</b> Scamper. <b>E:</b> Interact with the highlighted nearby object or bear. <b>I:</b> Backpack. <b>M:</b> World Map. <b>Tab:</b> Journal. <b>Escape:</b> Pause or close.</p><p>The border around interactables and the lower-left hint show what your cub can do. Click a destination to walk there.</p>',[{text:'GOT IT',action:closeModal}]);}
 function v4PauseMenu(){openModal('PAUSED IN WHISPERWOOD',`<p>${h(v4Name())}, your adventures are saved automatically.</p><div class="v3ModalGrid"><button data-pause="resume">Resume</button><button data-pause="save">Save now</button><button data-pause="backpack">Backpack</button><button data-pause="settings">Settings</button><button data-pause="tutorial">Restart tutorial</button><button data-pause="menu">Main menu</button></div>`,[{text:'RESUME',action:closeModal}]);document.querySelectorAll('[data-pause]').forEach(b=>b.onclick=()=>{const p=b.dataset.pause;closeModal();if(p==='resume')return;if(p==='save'){save();notify('Game saved.');}if(p==='backpack')openBackpack();if(p==='menu')v4ShowMenu();if(p==='settings'){v4ShowMenu();v4MenuSettings();}if(p==='tutorial'){state.tutorial={enabled:true,step:0,completed:false};state.location='den';state.playerPos=origin.den.slice();save();render();}});}
+
+/* v5.1 GAMEPLAY RELIABILITY: coordinate correctness and obstacle-aware navigation. */
+function v51CanvasPoint(el,e){
+ const r=el.getBoundingClientRect(),w=el.width,h=el.height;
+ const scale=Math.min(r.width/w,r.height/h);
+ const drawnW=w*scale,drawnH=h*scale;
+ const offsetX=(r.width-drawnW)/2,offsetY=(r.height-drawnH)/2;
+ const x=(e.clientX-r.left-offsetX)/scale,y=(e.clientY-r.top-offsetY)/scale;
+ if(x<0||x>w||y<0||y>h)return null;
+ return {x,y};
+}
+let v51Waypoints=[];
+const v51Step=14,v51CX=35,v51CY=137;
+function v51Cell(x,y){return [Math.round((x-v51CX)/v51Step),Math.round((y-v51CY)/v51Step)]}
+function v51Coord(a,b){return [v51CX+a*v51Step,v51CY+b*v51Step]}
+function v51RouteTo(dest){
+ if(!dest)return false;
+ const from=state.playerPos;
+ const [sx,sy]=v51Cell(...from);
+ const source=sx+','+sy;
+ const maxX=Math.floor((733-v51CX)/v51Step),maxY=Math.floor((404-v51CY)/v51Step);
+ const targetIsBlocked=v4Blocked(dest[0],dest[1]);
+ const starts=targetIsBlocked?[]:[dest.slice(0,2)];
+ if(targetIsBlocked)for(const rad of [16,32,48,64]){
+   for(let i=0;i<12;i++){const t=i*Math.PI/6;starts.push([dest[0]+Math.cos(t)*rad,dest[1]+Math.sin(t)*rad])}
+ }
+ const targets=new Map();
+ for(const xy of starts){
+   const [a,b]=v51Cell(...xy),p=v51Coord(a,b);
+   if(a>=0&&a<=maxX&&b>=0&&b<=maxY&&!v4Blocked(...p))targets.set(a+','+b,p);
+ }
+ const queue=[[sx,sy]],seen=new Set([source]),parents=new Map();
+ let found=null;
+ for(let idx=0;idx<queue.length&&idx<3000;idx++){
+   const [x,y]=queue[idx],key=x+','+y;
+   if(targets.has(key)){found=key;break;}
+   for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+     const a=x+dx,b=y+dy,k=a+','+b,p=v51Coord(a,b);
+     if(a<0||b<0||a>maxX||b>maxY||seen.has(k)||v4Blocked(...p))continue;
+     seen.add(k);parents.set(k,key);queue.push([a,b]);
+   }
+ }
+ if(!found)return false;
+ if(targetIsBlocked){const spot=targets.get(found);dest[0]=spot[0];dest[1]=spot[1];}
+ const path=[];
+ for(let key=found;key!==source;key=parents.get(key)){
+   const [a,b]=key.split(',').map(Number);
+   path.push(v51Coord(a,b));
+   if(path.length>3000)return false;
+ }
+ path.reverse();
+ // Collapse straight grid segments while keeping turns outside colliders.
+ const reduced=[];
+ for(let i=0;i<path.length;i++){
+   const prev=i?path[i-1]:from,next=path[i+1];
+   if(!next||(next[0]-path[i][0])*(path[i][1]-prev[1])!==(next[1]-path[i][1])*(path[i][0]-prev[0]))reduced.push(path[i]);
+ }
+ v51Waypoints=reduced;
+ if(!v4Blocked(dest[0],dest[1])&&Math.hypot(found.split(',')[0]*v51Step+v51CX-dest[0],found.split(',')[1]*v51Step+v51CY-dest[1])<19) v51Waypoints.push(dest.slice(0,2));
+ return true;
+}
 // Continuous movement with per-frame clamping and simple large-obstacle collision.
 function v4Blocked(x,y){if(x<32||x>738||y<133||y>411)return true;if(state.location==='den'&&x>399&&x<522&&y>267&&y<311)return true;if(state.location==='post'&&x>125&&x<272&&y>285&&y<347)return true;return false;}
 function v4MotionFrame(ms){if(!state||v4MenuIsOpen||v4CreatorIsOpen||paused||state.dead||mapOpen||$('modalBackdrop').classList.contains('open'))return;if(!v4LastFrame)v4LastFrame=ms;const dT=Math.min(.06,(ms-v4LastFrame)/1000||.016);v4LastFrame=ms;
  let dx=(v4Keys.has('d')||v4Keys.has('arrowright')?1:0)-(v4Keys.has('a')||v4Keys.has('arrowleft')?1:0),dy=(v4Keys.has('s')||v4Keys.has('arrowdown')?1:0)-(v4Keys.has('w')||v4Keys.has('arrowup')?1:0);
- if(v4AutoPoint&&(dx||dy))v4AutoPoint=null;
- if(v4AutoPoint&&!dx&&!dy){let vx=v4AutoPoint[0]-state.playerPos[0],vy=v4AutoPoint[1]-state.playerPos[1],len=Math.hypot(vx,vy);if(len<8){const callback=v4AutoPoint[2];v4AutoPoint=null;if(callback)callback();}else{dx=vx/len;dy=vy/len;}}
+ if(v4AutoPoint&&(dx||dy)){v4AutoPoint=null;v51Waypoints=[];}
+ if(v4AutoPoint&&!dx&&!dy){
+ const wp=v51Waypoints.length?v51Waypoints[0]:v4AutoPoint;
+ const vx=wp[0]-state.playerPos[0],vy=wp[1]-state.playerPos[1],len=Math.hypot(vx,vy);
+ if(len<8){if(v51Waypoints.length)v51Waypoints.shift();
+   else {const callback=v4AutoPoint[2];v4AutoPoint=null;if(callback)callback();}
+ }else{dx=vx/len;dy=vy/len;}
+}
  if(dx||dy){const length=Math.hypot(dx,dy)||1,spd=(v4Keys.has('shift')?142:98)*dT;dx=dx/length*spd;dy=dy/length*spd;const x=state.playerPos[0],y=state.playerPos[1];if(!v4Blocked(x+dx,y))state.playerPos[0]=clamp(x+dx,32,738);if(!v4Blocked(state.playerPos[0],y+dy))state.playerPos[1]=clamp(y+dy,133,410);playerMoving=true;state.pose='walk';v4MoveEffort+=spd;if(v4MoveEffort>80){v4MoveEffort=0;state.needs.energy=clamp(state.needs.energy-.24);state.phaseActs+=.025;}}else playerMoving=false;
  const nearest=v4Nearest(120);v4PromptTarget=nearest;const hud=$('v4Interact');if(state.options?.help&&nearest){hud.innerHTML=`<strong>[E] ${h(nearest.label)}</strong> · ${Math.round(nearest.d)}px away`;}else hud.innerHTML='<strong>WASD</strong> Walk · <strong>E</strong> Interact · <strong>M</strong> Map';
  if(state.location==='trail')v4UpdateCars(dT);if(state.location==='river')v4CheckWater(dT);
- v4CheckOrphanNeeds(dT);
+ v4CheckOrphanNeeds(dT);v51Camera();
 }
 function v4Nearest(maxDist=130){const ps=state.playerPos,loc=state.location;const entries=[...WORLD[loc].objects.map(o=>({kind:'object',x:o[1],y:o[2],label:o[0],obj:o,id:o[3]})),...state.npcs.filter(n=>n.location===loc).map(n=>({kind:'npc',x:n.worldPos?.[0]||0,y:n.worldPos?.[1]||0,id:n.id,label:'Talk to '+n.name}))];if(loc==='den')entries.push({kind:'mama',x:563,y:242,label:'Talk to Mama'});if(loc==='trail'&&v4TraderHere())entries.push({kind:'trader',x:592,y:308,label:'Speak with wandering trader'});if(loc==='trail'&&state.orphan.status==='found')entries.push({kind:'orphan',x:405,y:320,label:'Help the abandoned newborn'});
  return entries.map(o=>({...o,d:Math.hypot(ps[0]-o.x,ps[1]-o.y)})).filter(o=>o.d<maxDist).sort((a,b)=>a.d-b.d)[0]||null;}
 function v4InteractNearest(){if(state.dead||v4MenuIsOpen||mapOpen)return;const n=v4Nearest(105);if(!n){notify('Nothing within reach. Walk closer to an object or cub.');return;}if(n.kind==='object'){interactObject(n.id,{x:n.x,y:n.y,id:n.label});return;}if(n.kind==='npc'){selectNPC(n.id);return;}if(n.kind==='mama'){talkMama('hug');switchTab('mama');return;}if(n.kind==='trader'){v4ShowTrader();return;}if(n.kind==='orphan'){v4OrphanDialogue();return;}}
 // Instead of stepping instantly on click, move toward the clicked point and use spatial actions on arrival.
-world.addEventListener('click',e=>{if(mapOpen||v4MenuIsOpen||v4CreatorIsOpen||state.dead)return;const r=world.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*768,y=(e.clientY-r.top)/r.height*434;const hotspot=worldHotspots.map(o=>({...o,d:Math.hypot(x-o.x,y-o.y)})).filter(o=>o.d<(o.r||38)).sort((a,b)=>a.d-b.d)[0];moveSteps=[];pendingInteraction=null;if(hotspot?.kind==='object'){v4AutoPoint=[clamp(hotspot.x+17,35,733),clamp(hotspot.y+27,135,407),()=>interactObject(hotspot.id,hotspot)];}else if(hotspot?.kind==='npc'){v4AutoPoint=[hotspot.x,clamp(hotspot.y+35,135,407),()=>selectNPC(hotspot.id)];}else if(hotspot?.kind==='mama'){v4AutoPoint=[510,260,()=>{v4CompleteStep('mama');v5MamaConversation();}];}else if(hotspot?.kind==='orphan'){v4AutoPoint=[405,355,()=>v4OrphanDialogue()];}else if(hotspot?.kind==='trader'){v4AutoPoint=[590,357,()=>v4ShowTrader()];}else v4AutoPoint=[clamp(x,35,733),clamp(y,135,407)];e.stopImmediatePropagation();},true);
+world.addEventListener('click',e=>{if(mapOpen||v4MenuIsOpen||v4CreatorIsOpen||state.dead)return;const point=v51CanvasPoint(world,e);if(!point)return;const {x,y}=point;const hotspot=worldHotspots.map(o=>({...o,d:Math.hypot(x-o.x,y-o.y)})).filter(o=>o.d<(o.r||38)).sort((a,b)=>a.d-b.d)[0];moveSteps=[];pendingInteraction=null;if(hotspot?.kind==='object'){v4AutoPoint=[clamp(hotspot.x+17,35,733),clamp(hotspot.y+27,135,407),()=>interactObject(hotspot.id,hotspot)];}else if(hotspot?.kind==='npc'){v4AutoPoint=[hotspot.x,clamp(hotspot.y+35,135,407),()=>selectNPC(hotspot.id)];}else if(hotspot?.kind==='mama'){v4AutoPoint=[510,260,()=>{v4CompleteStep('mama');v5MamaConversation();}];}else if(hotspot?.kind==='orphan'){v4AutoPoint=[405,355,()=>v4OrphanDialogue()];}else if(hotspot?.kind==='trader'){v4AutoPoint=[590,357,()=>v4ShowTrader()];}else v4AutoPoint=[clamp(x,35,733),clamp(y,135,407)];
+ if(!v51RouteTo(v4AutoPoint)){v4AutoPoint=null;notify('No safe path to that spot. Try moving nearer or around the obstacle.');}
+ e.stopImmediatePropagation();},true);
 function v4KeysHandler(e){if(['input','textarea','select'].includes(document.activeElement?.tagName?.toLowerCase()))return;if(v4MenuIsOpen||v4CreatorIsOpen)return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift','e','i','m','tab','escape',' '].includes(key)){e.preventDefault();e.stopImmediatePropagation();}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(key)){v4Keys.add(key);moveSteps=[];}if(e.repeat)return;
  if(key==='e')v4InteractNearest();if(key==='i')openBackpack();if(key==='m')mapOpen?closeMap():showWorldMap();if(key==='tab')v4ShowMore();if(key==='escape'){if(mapOpen)closeMap();else if($('modalBackdrop').classList.contains('open'))closeModal();else v4PauseMenu();}if(key===' '&&v4FishingActive)v4ReelFish();}
 document.addEventListener('keydown',v4KeysHandler,true);document.addEventListener('keyup',e=>{v4Keys.delete(e.key.toLowerCase());},true);window.addEventListener('blur',()=>v4Keys.clear());
