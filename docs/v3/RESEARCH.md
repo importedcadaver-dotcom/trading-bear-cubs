@@ -1,0 +1,21 @@
+# Genre / UX / art research applied to v3
+
+These are independently sourced reference observations, **not** claims that v3 fully replicates the original games. The v3 game uses original procedural pixel graphics rather than copying external game sprites.
+
+| Reference and evidence | Observed design principle | Applied / tested in v3 | Still proposed for later |
+|---|---|---|---|
+| [Stardew Valley — Villagers](https://stardewvalleywiki.com/Villagers) | Villagers have routines, can be in different locations, and react individually to gifts. | Each named cub has one active location, phase-based schedule, changing items and personal value; tests assert geographic uniqueness. | True waypoint-based travel, richer daily/weather exceptions, authored individual events. |
+| [Recettear — Haggling](https://recettear.fandom.com/wiki/Haggling) | Negotiating purchases and sales is a deliberate shopkeeping activity, with relationships shaped by outcomes. | Kept original selectable barter offers, NPC valuations, reputation, outcomes and inventory transfer logic; added location and protected-good checks. | Complex counteroffers, individual credit/favor ledgers, stall rental contracts. |
+| [Moonlighter — Customer reactions](https://moonlighter.fandom.com/wiki/Selling_and_Reactions) | Price, supply, demand and customer response affect future commercial outcomes. | Kept saturation, market fees, the rival's alternatives, rejection and relationship consequences. | Live stall traffic visualizations and sophisticated price discovery analytics. |
+| [Bear and Breakfast — Tutorials](https://bear-and-breakfast.fandom.com/wiki/Tutorials) | Functional furniture and crafting should connect upgrades to actual services and space. | Preserved crafting/construction and drew market amenities; some objects have environmental use. | Drag-and-drop tile placement, collision checks, resident object schedules. |
+| [A Short Hike — developer's design account](https://blog.playstation.com/2021/08/05/crafting-a-tiny-open-world-a-look-behind-the-scenes-at-the-creation-of-a-short-hike/) | A compact explorable world can encourage wandering, discovery and encounters instead of gigantic content volume. | Eight connected areas with different environmental art, objects, paths and gathering sources. | Landmarks, secrets that require observation, seamless paths between zones. |
+| [Nielsen Norman Group — Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/) | Keep frequent tasks visible and advanced operations behind clearly labeled secondary controls. | Expanded world canvas, nearby bag hotbar, map/backpack/dev button row, tabs for detailed interfaces. Tested 1440×900 and 390×844 widths for horizontal overflow. | Usability tests with people, better keyboard focus and scaling controls. |
+| [U.S. National Park Service — Bear Identification](https://www.nps.gov/articles/bear-identification.htm) and [Parks Canada — Bear basics](https://parks.canada.ca/pn-np/mtn/ours-bears/generaux-basics.aspx) | Brown bears have short, rounded, widely set ears and large round heads; real brown bears are not canine-shaped. | Adapted compact pixel sprite proportions, broader heads, lower muzzles and round ears, with an oversized Mama. | Full directional walk/pose animation set, species/age silhouettes, fur detail and sprite sheet polish. |
+
+## Research-driven experiments to evaluate next
+
+1. **Offscreen living world:** log NPC intention/path/location before and after transit; test no duplication and whether players can intercept trips.
+2. **Economy feedback:** allow players to see why an NPC refused, distinguish scarcity from sentimental attachment, and measure whether trades feel learnable but not deterministic.
+3. **Controls:** run task usability studies for the steps “eat berry”, “find Pebble”, “open backpack”, “hide object from Mama” using real player observations.
+4. **Rarity:** monitor real item counts after 30–100 days, not just probabilities per single foraging roll; introduce sinks and world capacity to avoid item inflation.
+5. **Visual scale:** commission or draw original higher-resolution pixel sprites with front/side/back frames, richer silhouettes and clearer interactions with furniture.
