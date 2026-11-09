@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.1.1 — Patch-release metadata
+- Correct the in-game version label to match the GitHub release and website. Gameplay rules are unchanged from 5.1.0.
+
 ## 5.1.0 — Gameplay Reliability
 - Fixed canvas pointer-to-world conversion with object-fit letterboxing; implemented obstacle-aware click-to-walk around Mama's Den.
 - Closed free-reputation exploit from identical-item barter and clarified completed trade messages.
