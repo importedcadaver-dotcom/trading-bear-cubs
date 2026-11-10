@@ -1,6 +1,6 @@
 // Pure utilities for the staged extraction of the legacy inline game.
-// The CURRENT runtime still contains a copy of the no-op guard; Playwright
-// integration tests verify actual behavior independently of these unit tests.
+// This source is inlined into the standalone game by build_standalone.py.
+// Vitest and the actual runtime therefore execute the same null-trade rule.
 export function normalizedGoods(goods = {}) {
   return Object.fromEntries(Object.entries(goods)
     .filter(([id, count]) => id && Number.isInteger(count) && count > 0)
