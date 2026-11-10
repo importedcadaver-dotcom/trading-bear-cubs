@@ -9,9 +9,18 @@ on:
       - "versions/**"
       - "scripts/**"
       - ".github/workflows/build-downloads.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "versions/**"
+      - "scripts/**"
+      - ".github/workflows/build-downloads.yml"
 
+# Build outputs are downloadable Actions artifacts, never direct pushes to protected main.
+# Versioned, permanent game downloads are published by release.yml.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -19,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -27,6 +36,24 @@ jobs:
         run: python scripts/extract_layers.py
       - name: Build version archives
         run: python scripts/build_archives.py
+      - name: Verify generated ZIP integrity and manifest
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import json
+          root = Path("archives")
+          manifest = json.loads((root / "MANIFEST.json").read_text())
+          assert manifest["archives"], "No ZIPs were generated"
+          for record in manifest["archives"]:
+              path = root / record["file"]
+              assert path.is_file(), f"Missing {path}"
+              assert path.stat().st_size == record["bytes"], f"Wrong size: {path}"
+              with ZipFile(path) as archive:
+                  assert archive.testzip() is None, f"Damaged ZIP: {path}"
+                  assert "index.html" in archive.namelist() or "Little_Trading_Post_COMPLETE_SOURCE" in path.name
+          print(f"Verified {len(manifest['archives'])} generated ZIP files")
+          PY
       - name: Install Chromium capture dependencies
         continue-on-error: true
         run: |
@@ -35,14 +62,20 @@ jobs:
       - name: Capture playable screenshots
         continue-on-error: true
         run: python scripts/capture_screenshots.py
-      - name: Commit generated downloads and screenshots
+      - name: Upload generated downloads, screenshots and extracted sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: trading-post-build-${{ github.run_id }}
+          path: |
+            archives/
+            assets/screenshots/
+            src/legacy/
+            src/v5-extension.js
+          if-no-files-found: error
+          retention-days: 30
+      - name: Explain where to download generated files
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add archives assets/screenshots src
-          if git diff --cached --quiet; then
-            echo "Generated artifacts unchanged."
-          else
-            git commit -m "Generate version download ZIPs and browser screenshots [skip ci]"
-            git push
-          fi
+          echo "### Downloadable game assets" >> "$GITHUB_STEP_SUMMARY"
+          echo "ZIPs, screenshots and extracted JavaScript are attached to this workflow run as **trading-post-build-${{ github.run_id }}**." >> "$GITHUB_STEP_SUMMARY"
+          echo "No generated files are pushed to protected `main`." >> "$GITHUB_STEP_SUMMARY"
+          echo "For permanent versioned downloads use [GitHub Releases](https://github.com/${{ github.repository }}/releases)." >> "$GITHUB_STEP_SUMMARY"
