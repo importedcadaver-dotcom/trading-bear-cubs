@@ -99,7 +99,21 @@ const $=id=>document.getElementById(id);
 let state, offered={},wanted={},activeTab='trade', paused=false, soundOn=false, toastTimer=0, animationTime=0, clickTargets=[];
 function fresh(){return {version:1,day:1,tick:0,rand:921357,rep:0,trades:0,foraged:0,gossip:0,inv:{berry:3,stick:1},npcs:NPCS.map(n=>({...n,inv:{...n.start},rel:0,discovered:false,mood:'CURIOUS',deals:0})),chosen:'fern',log:[{s:'Your little trading post is open! Three berries and a very nice stick.',d:1},{s:'Fern has a carved wooden fish. Pebble is looking for one...',d:1},{s:'The cubs keep trading, even when you are not watching.',d:1}],upgrades:[],event:'Ordinary afternoon',victory:false,bluffs:0,weather:'sunny',totalFound:0,visits:0};}
 function load(){try{const data=JSON.parse(localStorage.getItem(SAVE));if(data&&data.version===1&&Array.isArray(data.npcs)&&data.npcs.length===6&&data.inv&&Number.isFinite(data.day)){state=data;state.npcs.forEach((n,i)=>{for(const k of ['rel','discovered','deals','mood'])if(n[k]===undefined)n[k]=k==='rel'||k==='deals'?0:false; if(!n.inv)n.inv={...NPCS[i].start}});return;}}catch(e){} state=fresh();}
-function save(){try{localStorage.setItem(SAVE,JSON.stringify(state))}catch(e){}}
+let v512SaveWarningShown=false;
+function save(){
+  try{
+    localStorage.setItem(SAVE,JSON.stringify(state));
+    v512SaveWarningShown=false;
+    return true;
+  }catch(e){
+    if(!v512SaveWarningShown){
+      v512SaveWarningShown=true;
+      console.error('Trading Post save failed. Export your game as a backup.',e);
+      if($('toast'))notify('SAVE FAILED — browser storage is full or blocked. Export a save from the developer menu.');
+    }
+    return false;
+  }
+}
 function rng(){state.rand=(Math.imul(state.rand,1664525)+1013904223)>>>0;return state.rand/4294967296}
 function randomOf(a){return a[Math.floor(rng()*a.length)]}
 function count(inv){return Object.values(inv).reduce((a,v)=>a+(Number.isFinite(v)?v:0),0)}
@@ -1193,9 +1207,137 @@ function devAction(id){state.cheats.on=true;log(`DEV MENU: ${id}`);if(id==='need
  else if(id==='revive'){state.dead=false;state.needs.health=70;state.needs.food=45;state.location='den';state.playerPos=origin.den.slice();}
  else if(id==='inspect'){openModal('State inspector',`<pre style="white-space:pre-wrap;max-height:55vh;overflow:auto;font-size:10px">${h(JSON.stringify({location:state.location,day:state.day,phase:state.phase,needs:state.needs,npcs:state.npcs.map(n=>({id:n.id,at:n.location,inv:n.inv,hidden:n.hiddenInv,rel:n.rel})),pools:state.pool,policy:state.policy,knowledge:state.knownSecrets},null,2))}</pre>`,[{text:'CLOSE',action:closeModal}]);return;}
  else if(id==='save'){downloadText('little-trading-post-save.json',JSON.stringify(state,null,2));}
- else if(id==='import'){const file=document.createElement('input');file.type='file';file.accept='.json';file.onchange=async()=>{try{const obj=JSON.parse(await file.files[0].text());if(!obj||!Array.isArray(obj.npcs)||obj.npcs.length!==6||!obj.inv)throw Error('Not a valid six-cub save');ensureV3(obj);state=obj;sanitize();save();render();notify('Imported six-cub save!')}catch(e){notify('Import failed: '+e.message)}};file.click();return;}
+ else if(id==='import'){
+    const input=document.createElement('input');
+    input.type='file';input.accept='.json,application/json';
+    input.onchange=async()=>{
+      try{
+        const file=input.files?.[0];
+        if(!file)return;
+        if(file.size>4*1024*1024)throw Error('Save exceeds the 4 MB limit.');
+        const data=JSON.parse(await file.text());
+        v512ImportSave(data);
+        notify('Imported your woodland save safely! Previous save backed up.');
+      }catch(e){notify('Import rejected: '+e.message);}
+    };
+    input.click();return;
+  }
  else if(id==='reset'){openModal('Start a new game?',`<p>Reset erases your current local progress. Export your save first if you want a backup.</p>`,[{text:'CANCEL',secondary:true,action:closeModal},{text:'RESET',action:()=>{state=fresh();save();closeModal();render()}}]);return;}
  save();render();}
+
+// v5.1.2 — defensive save validation, migration, and transactional import.
+// The migration is staged on a detached parsed object, never on the live state.
+const V512_BACKUP=SAVE+'_backup_before_import';
+const v512Record=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+function v512CheckInventory(inv,label){
+  if(!v512Record(inv))throw Error(label+' is not an inventory.');
+  for(const [id,q] of Object.entries(inv)){
+    if(!Object.prototype.hasOwnProperty.call(items,id))throw Error(label+' contains an unknown item.');
+    if(!Number.isSafeInteger(q)||q<0||q>100000)throw Error(label+' has invalid item quantities.');
+  }
+}
+function v512ValidateSave(input){
+  if(!v512Record(input)||input.version!==1)throw Error('Unsupported save format.');
+  if(!Array.isArray(input.npcs)||input.npcs.length!==NPCS.length)throw Error('Save must include all six cubs.');
+  if(!Number.isSafeInteger(input.day)||input.day<1||input.day>1000000)throw Error('Invalid forest day.');
+  if(!v512Record(input.inv))throw Error('Player inventory is missing.');
+  v512CheckInventory(input.inv,'Your bag');
+  for(const name of ['hidden','stored','displayed']){
+    if(input[name]!==undefined)v512CheckInventory(input[name],name);
+  }
+  if(input.hiddenAt!==undefined){
+    if(!v512Record(input.hiddenAt))throw Error('Invalid hidden locations.');
+    for(const [loc,inv] of Object.entries(input.hiddenAt)){
+      if(!Object.prototype.hasOwnProperty.call(WORLD,loc))throw Error('Unknown hiding location.');
+      v512CheckInventory(inv,'Hidden '+loc);
+    }
+  }
+  if(input.location!==undefined&&!Object.prototype.hasOwnProperty.call(WORLD,input.location))throw Error('Unknown world location.');
+  for(let i=0;i<NPCS.length;i++){
+    const n=input.npcs[i];
+    if(!v512Record(n)||n.id!==NPCS[i].id)throw Error('Missing or reordered cub identity.');
+    v512CheckInventory(n.inv,'Cub '+NPCS[i].name);
+    for(const field of ['hiddenInv','reservedInv']){
+      if(n[field]!==undefined)v512CheckInventory(n[field],NPCS[i].name+' '+field);
+    }
+    if(n.rel!==undefined&&!Number.isFinite(n.rel))throw Error('Invalid cub friendship.');
+  }
+  if(input.needs!==undefined){
+    if(!v512Record(input.needs))throw Error('Invalid needs.');
+    for(const value of Object.values(input.needs))if(!Number.isFinite(value))throw Error('Invalid needs value.');
+  }
+  if(input.trader?.stock!==undefined)v512CheckInventory(input.trader.stock,'Trader stock');
+  if(input.mama?.confiscated!==undefined)v512CheckInventory(input.mama.confiscated,'Mama inventory');
+  if(input.playerPos!==undefined&&(!Array.isArray(input.playerPos)||input.playerPos.length!==2||input.playerPos.some(x=>!Number.isFinite(x))))throw Error('Invalid cub position.');
+  for(const field of ['rep','trades','tick']){
+    if(input[field]!==undefined&&(!Number.isSafeInteger(input[field])||input[field]<0||input[field]>100000000))throw Error('Invalid '+field+'.');
+  }
+  // JSON.parse can carry arbitrary public-facing strings. Restore canonical NPC
+  // names/titles and escape dynamic values at HTML boundaries.
+  for(let i=0;i<NPCS.length;i++){
+    const n=input.npcs[i];n.name=NPCS[i].name;n.title=NPCS[i].title;
+    n.quote=NPCS[i].quote;n.family=typeof n.family==='string'?n.family.slice(0,300):n.family;
+    if(!Array.isArray(n.memory)&&typeof n.memory!=='string')n.memory=[];
+  }
+  // Old standalone saves may not have the later extension fields.
+  if(input.v2!==2)ensureV2(input);
+  input.hidden=input.hidden||{};input.stored=input.stored||{};input.displayed=input.displayed||{};
+  if(input.v3!==3)ensureV3(input);
+  input.hiddenAt=input.hiddenAt||{};for(const loc of Object.keys(WORLD))input.hiddenAt[loc]=input.hiddenAt[loc]||{};
+  input.hiddenAt.post=input.hidden;
+  input.history=Array.isArray(input.history)?input.history:[];
+  input.location=input.location||'post';
+  input.playerPos=input.playerPos||origin[input.location].slice();
+  if(input.v4!==4)ensureV4(input);
+  input.avatar=input.avatar||{name:'Little Cub',gender:'Male',pronouns:'he/him',coat:'#aa774b'};
+  if(typeof input.avatar.name!=='string'||input.avatar.name.length>32||/[<>]/.test(input.avatar.name))throw Error('Invalid cub name.');
+  input.tutorial=input.tutorial||{enabled:false,step:0,completed:false};
+  input.tracker=input.tracker||{fishing:0,swimming:0,fishCaught:0,roadAccidents:0,discovered:[],lessons:0};
+  input.orphan=input.orphan||{status:'not-found',foundDay:null,warmth:60,food:72,name:'Foundling',seenByMama:false};
+  input.options=input.options||{reducedMotion:false,help:true};
+  v5Ensure(input);
+  input.v5ContrabandLog=Array.isArray(input.v5ContrabandLog)?input.v5ContrabandLog:[];
+  input.v5DrugHistory=input.v5DrugHistory||{};
+  input.v5Builds=input.v5Builds||[];
+  input.v5Events=input.v5Events||[];
+  input.v5NPCMoves=input.v5NPCMoves||[];
+  input.knownSecrets=input.knownSecrets||{};
+  input.cheats=input.cheats||{on:false,god:false,infinite:false};
+  input.mapVisits=input.mapVisits||{[input.location]:1};
+  input.log=Array.isArray(input.log)?input.log:[];
+  input.npcs.forEach(n=>{
+    n.hiddenInv=n.hiddenInv||{};n.reservedInv=n.reservedInv||{};
+    n.location=Object.prototype.hasOwnProperty.call(WORLD,n.location)?n.location:'post';
+    n.worldPos=Array.isArray(n.worldPos)&&n.worldPos.length===2&&n.worldPos.every(Number.isFinite)?n.worldPos:origin[n.location].slice();
+    n.worldTarget=Array.isArray(n.worldTarget)&&n.worldTarget.length===2&&n.worldTarget.every(Number.isFinite)?n.worldTarget:n.worldPos.slice();
+    n.relTo=n.relTo||{};n.dependency=n.dependency||{nic:0,cannabis:0,alcohol:0,stimulant:0,opioid:0};
+    n.knowledge=n.knowledge||{};n.memory=Array.isArray(n.memory)?n.memory:[];
+  });
+  return input;
+}
+function v512ImportSave(data){
+  const oldState=state;
+  const candidate=v512ValidateSave(data);
+  // Rejecting a save does not overwrite current play or the existing browser save.
+  let original;
+  try{
+    original=localStorage.getItem(SAVE);
+    if(original)localStorage.setItem(V512_BACKUP,original);
+  }catch(e){throw Error('Cannot back up your existing save: '+e.message);}
+  try{
+    state=candidate;
+    sanitize();
+    if(!save())throw Error('Browser storage rejected the new save.');
+    offered={};wanted={};paused=false;
+    render();
+    return true;
+  }catch(e){
+    state=oldState;
+    try{if(original!==null){localStorage.setItem(SAVE,original);}else localStorage.removeItem(SAVE);}catch(_){}
+    throw e;
+  }
+}
+
 const oldCapacityV3=capacity;capacity=function(){return state?.cheats?.infinite?99999:oldCapacityV3()};
 const oldCheckMotherV3=checkMother;
 checkMother=function(){oldCheckMotherV3();if(phase()===3&&count(state.hiddenAt.den)>0&&rng()<.25+state.mama.suspicion/300){const id=Object.keys(state.hiddenAt.den).find(k=>state.hiddenAt.den[k]>0);if(id){add(state.hiddenAt.den,id,-1);if(!VAPES.has(id))add(state.stored,id,1);state.mama.trust=clamp(state.mama.trust-(VAPES.has(id)?9:3));log(`Mama checked the den and discovered your hidden ${items[id].name}. ${VAPES.has(id)?'She confiscated the unsafe device.':'She moved it to safe family storage.'}`);}}if(state.location==='den'&&state.needs.food<25){state.needs.food=clamp(state.needs.food+35);state.mama.memories.unshift(`D${state.day}: Mama noticed your hunger and fed you.`);log('Mama intervened in the den and fed a hungry cub.');say('mama','I will not let you skip supper.');}};
@@ -1552,6 +1694,8 @@ const v5OldProgressPhase=progressPhase;progressPhase=function(){v5OldProgressPha
 function v5Reason(n){if(n.location!==state.location)return `${n.name} isn't in this location.`;const list=Object.keys(wanted);if(!list.length)return `${n.name} wants to know what you are asking for.`;if(list.some(id=>n.sentimental===id))return `“That belongs to my memories. It isn't just a thing.”`;
  if(n.rel<-3)return `“I don't trust you after what happened before.”`;if(list.some(id=>n.reservedInv?.[id]))return `“I promised that to someone else.”`;if(list.some(id=>!quantity(n.inv,id)))return `“I don't carry that with me.”`;if(Object.keys(offered).some(id=>quantity(n.inv,id)>1))return `“I already have lots of that.”`;return `“I don't like this deal enough to part with my treasures.”`;}
 const v5OldNegotiate=negotiate;negotiate=function(){const n=npc();
+ if(state.dead||!v5NearCub(n))return notify('You must stand near this cub to barter.');
+
  const keys=new Set([...Object.keys(offered),...Object.keys(wanted)]);
  const isNull=keys.size>0&&[...keys].every(id=>(offered[id]||0)===(wanted[id]||0));
  if(isNull){
@@ -1559,6 +1703,11 @@ const v5OldNegotiate=negotiate;negotiate=function(){const n=npc();
    tradeResult(msg,false);say(n.id,'That is the same treasure on both sides!');notify('No reputation for an identical swap.');return;
  }if(n.location!==state.location)return notify('You must meet to trade in person.');if(!count(offered)||!count(wanted))return notify('Place an item on both sides of the deal.');const id=Object.keys(offered).find(i=>V5_DRUGS[i]);const sentimental=Object.keys(wanted).find(i=>i===n.sentimental||i===n.love);const activeClass=id&&V5_DRUGS[id].class,crave=activeClass&&(n.cravings[activeClass]||0);
  if(id&&sentimental&&crave>40&&quantity(n.inv,sentimental)>=1&&canPay(state.inv,offered)&&canPay(n.inv,wanted)){
+  if(count(state.inv)-count(offered)+count(wanted)>capacity()){
+    tradeResult(n.name+': Your bag cannot hold this exchange.',false);
+    return notify('Your backpack is full. Make room before attempting the deal.');
+  }
+
  const resist=rng()<Math.max(.1,.7-(crave-40)*.013);if(resist){n.mood='DISTRESSED';n.memory.unshift(`D${state.day}: Refused to surrender cherished ${items[sentimental].name} despite cravings.`);tradeResult(`${n.name}: “No! That's precious to me. I need help, not another deal.”`,false);log(`${n.name} refused an exploitative proposal despite cravings.`);clearSelectionsOnly();save();render();return;}
  spend(state.inv,offered);spend(n.inv,wanted);for(const [k,v]of Object.entries(wanted))add(state.inv,k,v);for(const [k,v]of Object.entries(offered))add(n.inv,k,v);n.rel=clamp(n.rel-4,-6,10);n.mood='DISTRESSED';n.cravings[activeClass]=Math.max(0,crave-16);n.memory.unshift(`D${state.day}: Surrendered cherished ${items[sentimental].name} in a desperate trade. Feels hurt.`);state.treasureHistory[sentimental]={formerOwner:n.id,day:state.day,context:'desperate dependence-related trade',regret:true};state.trades++;state.mama.suspicion=clamp(state.mama.suspicion+11);state.v5ContrabandLog.push({day:state.day,kind:'desperate-trade',npc:n.id,id,treasure:sentimental});log(`${n.name} parted with cherished ${items[sentimental].name} during a desperate, exploitative trade. The item retains its former owner and story. ${n.name} may later seek help or ask for it back.`);say(n.id,'I want my treasure back... I feel awful.');clearSelectionsOnly();tick();render();return;}
  const before=state.trades;const offeredBefore={...offered},wantedBefore={...wanted};v5OldNegotiate();if(state.trades>before){
@@ -1589,7 +1738,7 @@ const v5OldInteractObj=interactObject;interactObject=function(action,spot){if(ac
 function v5ShowNotice(){if(state.location!=='post'&&state.location!=='rival')return notify('The notice board is at the market.');const quests=state.v5Quests;const eligible=state.npcs.filter(n=>n.location==='post'||n.location==='rival');if(!quests[`d${state.day}`]){const n=eligible[0]||state.npcs[state.day%state.npcs.length];const id=n.love||'fish';quests[`d${state.day}`]={id,npc:n.id,done:false,accepted:false};}const q=quests[`d${state.day}`],npcq=state.npcs.find(n=>n.id===q.npc);
  openModal('WHISPERWOOD NOTICE BOARD',`<p>Notes are left by real cubs with real wishes. The board also tracks rumors and market opportunities.</p><div class="v5DealReason"><b>Today's request — ${h(npcq.name)}</b><p>“I really want ${h(items[q.id].name)}. Bring it to me if you can!”</p><p>${q.done?'COMPLETED':q.accepted?'ACCEPTED — meet the cub and deliver':'Not yet accepted'}</p></div><p><b>Rumors:</b> ${h(state.event)} · Panda often passes the Human Trail every third forest day. Your own stall rules affect visiting traders.</p><p>Rumor about your family: ${h(state.mama.memories?.[0]||'Mama is watching her cubs.')}</p><button class="v5Choice" id="v5AcceptQuest" ${q.done?'disabled':''}>${q.accepted?'DELIVER THE ITEM':'ACCEPT THIS REQUEST'}</button>`,[{text:'CLOSE',action:closeModal}]);$('v5AcceptQuest').onclick=()=>{if(!q.accepted){q.accepted=true;log(`Accepted ${npcq.name}'s request for ${items[q.id].name}.`);closeModal();notify('Quest accepted. Find the item and meet the cub.');return;}if(npcq.location!==state.location)return notify(`${npcq.name} isn't here. Visit the cub in person.`);if(quantity(state.inv,q.id)<1)return notify('You do not have the requested item.');add(state.inv,q.id,-1);add(npcq.inv,q.id,1);q.done=true;npcq.rel=clamp(npcq.rel+2,-6,10);state.rep+=2;log(`Delivered ${items[q.id].name} to ${npcq.name}. The cub kept the item and thanked you.`);closeModal();render();save();};}
 function v5MarketGate(){if(state.location!=='post')return notify('You must be at YOUR own market gate.');openModal('YOUR MARKET GATE',`<p>These are your facilities. Cubs may trade elsewhere freely, but using your stall requires your rules.</p><p><b>Current policy:</b> ${h(state.policy||'free')} · Total fees collected: ${state.fees||0} · Visitors denied: ${state.denials||0}</p><div class="v4OptionStack"><button class="v5Choice" data-v5policy="free">Open access for everyone</button><button class="v5Choice" data-v5policy="berry">Charge a berry or acorn</button><button class="v5Choice" data-v5policy="treasure">Charge a little treasure</button><button class="v5Choice" data-v5policy="friends">Friends and littermates only</button></div>`,[{text:'CLOSE',action:closeModal}]);document.querySelectorAll('[data-v5policy]').forEach(b=>b.onclick=()=>{const policy=b.dataset.v5policy;closeModal();switchPolicy(policy);});}
-function v5RivalConflict(){if(state.location!=='rival')return notify('The rival stall is somewhere else.');const relatives=state.npcs.filter(n=>['fern','pebble'].includes(n.id)&&n.location==='rival');openModal('THE RIVAL MARKET',`<p>Moss has set up a stall. He isn't using your facilities, and other cubs are free to trade with him.</p><p>${relatives.length?`${relatives.map(n=>n.name).join(' and ')} came here. As their littermate, you may feel betrayed.`:'No littermate is here currently.'}</p><div class="v4OptionStack"><button class="v5Choice" id="v5RivalGossip">Ask why cubs like Moss's stall</button><button class="v5Choice" id="v5RivalUpset">Complain to your littermates</button><button class="v5Choice" id="v5RivalSabotage">Pull down his advertisement (sabotage; witnesses may report)</button></div>`,[{text:'LEAVE',action:closeModal}]);$('v5RivalGossip').onclick=()=>{log('Moss says: “I let cubs trade without paying for your fancy benches.”');closeModal();notify('Moss competes on access fees and friendship.');};$('v5RivalUpset').onclick=()=>{if(!relatives.length)return notify('Neither of your littermates is here to confront.');const n=relatives[0];n.rel=clamp(n.rel-1,-6,10);n.memory.unshift(`D${state.day}: My littermate was angry that I visited Moss.`);log(`${v4Name()} argued with ${n.name} over visiting the rival post. The sibling felt hurt.`);closeModal();render();};$('v5RivalSabotage').onclick=()=>{state.rivalPressure=clamp((state.rivalPressure||0)+5);state.mama.suspicion=clamp(state.mama.suspicion+10);log(`${v4Name()} damaged Moss's sign; a cub may tell Mama, and rivals may retaliate.`);setPose('sneak',1800);closeModal();v5WorldEffect('!');notify('Sabotage has consequences.');};}
+function v5RivalConflict(){if(state.location!=='rival')return notify('The rival stall is somewhere else.');const relatives=state.npcs.filter(n=>['fern','pebble'].includes(n.id)&&n.location==='rival');openModal('THE RIVAL MARKET',`<p>Moss has set up a stall. He isn't using your facilities, and other cubs are free to trade with him.</p><p>${relatives.length?`${relatives.map(n=>h(n.name)).join(' and ')} came here. As their littermate, you may feel betrayed.`:'No littermate is here currently.'}</p><div class="v4OptionStack"><button class="v5Choice" id="v5RivalGossip">Ask why cubs like Moss's stall</button><button class="v5Choice" id="v5RivalUpset">Complain to your littermates</button><button class="v5Choice" id="v5RivalSabotage">Pull down his advertisement (sabotage; witnesses may report)</button></div>`,[{text:'LEAVE',action:closeModal}]);$('v5RivalGossip').onclick=()=>{log('Moss says: “I let cubs trade without paying for your fancy benches.”');closeModal();notify('Moss competes on access fees and friendship.');};$('v5RivalUpset').onclick=()=>{if(!relatives.length)return notify('Neither of your littermates is here to confront.');const n=relatives[0];n.rel=clamp(n.rel-1,-6,10);n.memory.unshift(`D${state.day}: My littermate was angry that I visited Moss.`);log(`${v4Name()} argued with ${n.name} over visiting the rival post. The sibling felt hurt.`);closeModal();render();};$('v5RivalSabotage').onclick=()=>{state.rivalPressure=clamp((state.rivalPressure||0)+5);state.mama.suspicion=clamp(state.mama.suspicion+10);log(`${v4Name()} damaged Moss's sign; a cub may tell Mama, and rivals may retaliate.`);setPose('sneak',1800);closeModal();v5WorldEffect('!');notify('Sabotage has consequences.');};}
 // Genuine construction placement: preview overlay is interactive and obstructs the previous canvas handler.
 const v5Placement=document.createElement('canvas');v5Placement.id='v5Placement';v5Placement.width=768;v5Placement.height=434;v5Placement.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:60;display:none;cursor:crosshair;image-rendering:pixelated';sceneContainer.appendChild(v5Placement);let v5PendingBuild=null,v5BuildXY=[420,335];
 const v5OldBuildCraft=buildCraft;buildCraft=function(recipe,isUpgrade){if(isUpgrade&&state.location==='post'&&!state.upgrades.includes(recipe.id))return v5BeginBuild(recipe);return v5OldBuildCraft(recipe,isUpgrade);};
@@ -1786,6 +1935,8 @@ const v51PreviousItemAction=itemAction;itemAction=function(id,action){
  return result;
 };
 
+window.LittleTradingPost={...window.LittleTradingPost,importSave:v512ImportSave,validateSave:v512ValidateSave,
+  exportSave:()=>JSON.stringify(state),backupSaveKey:V512_BACKUP};
 load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
 })();
 </script>
