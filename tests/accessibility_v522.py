@@ -51,6 +51,32 @@ with sync_playwright() as p:
         check(page.evaluate("document.activeElement.id")=="v51NeedDetails",
               "Closing a dialog restores the previous keyboard focus")
 
+        # CodeRabbit issue: global Tab shortcut previously swallowed every
+        # Tab key before the dialog's focus trap could see it.
+        page.locator("#v5Talk").click()
+        options=page.locator("#modal button:visible:not([disabled])")
+        check(options.count()>=3,"Conversation modal has multiple focusable controls")
+        first=options.first.get_attribute("id")
+        page.wait_for_timeout(30)
+        check(page.evaluate("document.activeElement.id")==first,
+              "Focus starts on the first conversation control")
+        page.keyboard.press("Tab")
+        check(page.evaluate("document.activeElement.id")!=first,
+              "Tab traverses to the next modal control rather than opening notebook")
+        options.last.focus()
+        page.keyboard.press("Tab")
+        check(page.evaluate("document.activeElement.id")==first,
+              "Tab wraps from final modal button to first")
+        options.first.focus()
+        page.keyboard.press("Shift+Tab")
+        check(page.evaluate("document.activeElement === Array.from(document.querySelectorAll('#modal button')).filter(e => e.getClientRects().length && !e.disabled).at(-1)"),
+              "Shift+Tab wraps from first modal button to last")
+        page.keyboard.press("Escape")
+        check(page.locator("#modalBackdrop.open").count()==0,
+              "Escape closes multi-control conversation")
+        check(page.evaluate("document.activeElement.id")=="v5Talk",
+              "Conversation focus returns to the Talk control")
+
         page.evaluate("window.__LTP_TEST__=true")
         check(page.evaluate("window.LittleTradingPost.tutorialTestStep(2)"),
               "Test-gated tutorial step injection works")
