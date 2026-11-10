@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.2.3 — Face-to-face cub encounters
+- New persisted in-world meetings: cubs approach each other before wrestling, playing, chatting, arguing, sharing or trading.
+- Social effects and item transfers apply only on completion; unfinished meetings cancel on relocation, without hidden reputation or inventory changes.
+- NPC movement uses scene-aware collision-aware paths rather than taking straight lines through the den nest or market stall.
+- Distinct animated encounter cues, real moved treasure icons, energy/relationship changes and per-bear memories.
+- Real-browser acceptance suite checks three contrasting social encounters, deferred barter conservation, cancellation, obstacle routing and existing gameplay regressions.
+- Standalone HTML stays offline-playable; no external assets or paid dependencies.
+
+**Not complete:** all long-form autonomous behavior, advanced animation rigs, complete furniture interaction states, or three-person independent usability testing.
+
+
 ## 5.2.2 — Tutorial Reliability & Keyboard Accessibility
 - Tutorial objectives remain eight steps; clearer step-by-step guidance is visible without adding progression gates.
 - Pebble is kept in Mama's Den when needed by the opening sibling objective; Fern returns to the post for the first required trade.
