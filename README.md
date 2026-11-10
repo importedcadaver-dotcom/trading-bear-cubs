@@ -2,7 +2,7 @@
 
 **A playable, offline-first browser game about a young brown bear cub who owns a woodland trading post.** Other cubs have independent wants, memories, families, possessions, and their own trading lives.
 
-> Project owner: `importedcadaver-dotcom` · Current playable build: **v5.2.1** · Status: **active private-game development / unfinished systems**
+> Project owner: `importedcadaver-dotcom` · Current playable build: **v5.2.2** · Status: **active private-game development / unfinished systems**
 >
 > **Content warning:** Fictional underage animal characters, substance use/addiction, contraband, coercion, starvation, injury and death can occur. These are game systems with consequences, not real-world instructions.
 

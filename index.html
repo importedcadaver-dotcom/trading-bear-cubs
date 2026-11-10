@@ -1007,6 +1007,12 @@ function scheduleV3(){
    if(n.id==='waffle')desired=ph===3?'playground':ph<=1?'post':'playground';
    if(n.id==='sprout')desired=ph===3?'playground':ph===1&&day%2===0?'post':'playground';
    if(n.id==='juniper')desired=ph===3?'woods':ph===1&&day%9===0?'trail':ph===1&&day%2===0?'post':'woods';
+   // First-time tutorial must not become impossible because a required cub left.
+   // The eight approved steps stay unchanged; only NPC availability is guided.
+   if(state.tutorial?.enabled&&!state.tutorial.completed){
+     if(n.id==='pebble'&&state.tutorial.step<=2)desired='den';
+     if(n.id==='fern'&&state.tutorial.step>=7)desired='post';
+   }
    if(!WORLD[desired])continue;
    if(n.travelPlan){n.travelPlan.nextDesired=desired;continue;}
    if(n.location===desired)continue;
@@ -1594,7 +1600,7 @@ function v4InteractNearest(){if(state.dead||v4MenuIsOpen||mapOpen)return;const n
 world.addEventListener('click',e=>{if(mapOpen||v4MenuIsOpen||v4CreatorIsOpen||state.dead)return;const point=v51CanvasPoint(world,e);if(!point)return;const {x,y}=point;const hotspot=worldHotspots.map(o=>({...o,d:Math.hypot(x-o.x,y-o.y)})).filter(o=>o.d<(o.r||38)).sort((a,b)=>a.d-b.d)[0];moveSteps=[];pendingInteraction=null;if(hotspot?.kind==='object'){v4AutoPoint=[clamp(hotspot.x+17,35,733),clamp(hotspot.y+27,135,407),()=>interactObject(hotspot.id,hotspot)];}else if(hotspot?.kind==='npc'){v4AutoPoint=[hotspot.x,clamp(hotspot.y+35,135,407),()=>selectNPC(hotspot.id)];}else if(hotspot?.kind==='mama'){v4AutoPoint=[510,260,()=>{v4CompleteStep('mama');v5MamaConversation();}];}else if(hotspot?.kind==='orphan'){v4AutoPoint=[405,355,()=>v4OrphanDialogue()];}else if(hotspot?.kind==='trader'){v4AutoPoint=[590,357,()=>v4ShowTrader()];}else v4AutoPoint=[clamp(x,35,733),clamp(y,135,407)];
  if(!v51RouteTo(v4AutoPoint)){v4AutoPoint=null;notify('No safe path to that spot. Try moving nearer or around the obstacle.');}
  e.stopImmediatePropagation();},true);
-function v4KeysHandler(e){if(['input','textarea','select'].includes(document.activeElement?.tagName?.toLowerCase()))return;if(v4MenuIsOpen||v4CreatorIsOpen)return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift','e','i','m','tab','escape',' '].includes(key)){e.preventDefault();e.stopImmediatePropagation();}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(key)){v4Keys.add(key);moveSteps=[];}if(e.repeat)return;
+function v4KeysHandler(e){if(e.key==='Tab'&&$('modalBackdrop').classList.contains('open'))return;if(['input','textarea','select'].includes(document.activeElement?.tagName?.toLowerCase()))return;if(v4MenuIsOpen||v4CreatorIsOpen)return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift','e','i','m','tab','escape',' '].includes(key)){e.preventDefault();e.stopImmediatePropagation();}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(key)){v4Keys.add(key);moveSteps=[];}if(e.repeat)return;
  if(key==='e')v4InteractNearest();if(key==='i')openBackpack();if(key==='m')mapOpen?closeMap():showWorldMap();if(key==='tab')v4ShowMore();if(key==='escape'){if(mapOpen)closeMap();else if($('modalBackdrop').classList.contains('open'))closeModal();else v4PauseMenu();}if(key===' '&&v4FishingActive)v4ReelFish();}
 document.addEventListener('keydown',v4KeysHandler,true);document.addEventListener('keyup',e=>{v4Keys.delete(e.key.toLowerCase());},true);window.addEventListener('blur',()=>v4Keys.clear());
 const v4OldDrawScene=drawScene;drawScene=function(){v4OldDrawScene();if(!state||mapOpen)return;const c=ctx,ms=performance.now();
@@ -1640,7 +1646,7 @@ opening=function(){v4ShowMenu();};
 
 /* THE LITTLE TRADING POST v5 — Living World & Playfeel overhaul.
    Source-level extension of the original v4 single-file simulation. */
-const V5_VERSION='5.2.1';
+const V5_VERSION='5.2.2';
 const v5OriginalZip='the-little-trading-post-v4-site(2).zip';
 const v5Style=document.createElement('style');v5Style.id='v5-theme';v5Style.textContent=`
 :root{--pine:#193f32;--deep:#102c26;--cream:#fff7e3;--honey:#e6b763;--berry:#a95760}
@@ -1910,8 +1916,19 @@ function v51DisplayNeeds(){
   return `<div class="v51Need" title="${name}: ${num}/100"><b>${name}</b><div class="v51NeedTrack"><i style="width:${num}%;background:${fill}"></i></div><strong>${num}</strong></div>`;
  }).join('');
  const t=state.tutorial;
- if(t?.enabled&&!t.completed&&state.location==='den'&&t.step===0){
-  v51Beacon.style.display='block';v51Beacon.textContent='✦ FIND MAMA · Click the large bear by the den exit, or walk to her and press E';
+ if(t?.enabled&&!t.completed){
+  const help=[
+   '1/8 · FIND MAMA · Click the large bear or walk up and press E',
+   '2/8 · BREAKFAST · Interact with the food pile near your nest',
+   '3/8 · PEBBLE · Find your littermate in the den and press E',
+   '4/8 · WOODLAND · Open the map (M) to travel to the Deep Woodland',
+   '5/8 · FIND GOODS · Walk to berry bushes and forage',
+   '6/8 · YOUR POST · Use the map (M) to return to Whisperwood Clearing',
+   '7/8 · BACKPACK · Press I or open your bag to inspect items',
+   '8/8 · YOUR FIRST TRADE · Meet Fern at the post and barter face-to-face'
+  ];
+  v51Beacon.style.display='block';
+  v51Beacon.textContent='✦ '+help[Math.max(0,Math.min(7,t.step))];
  }else v51Beacon.style.display='none';
 }
 $('v51NeedDetails').onclick=()=>openModal('YOUR LITTLE CUB’S NEEDS',
@@ -1940,6 +1957,7 @@ function v51ItemCanvas(id){
  return v51SpriteCache.get(id);
 }
 function v51Flight(id,from,to,duration=1050){
+ if(state?.options?.reducedMotion||window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
  const now=performance.now();
  v51Transfers.push({id,from:from.slice(),to:to.slice(),begin:now,end:now+duration});
 }
@@ -2223,6 +2241,57 @@ showDev=function(){
 };
 window.LittleTradingPost={...window.LittleTradingPost,importSave:v512ImportSave,validateSave:v512ValidateSave,
   exportSave:()=>JSON.stringify(state),restoreBackup:v512RestorePreImportBackup,backupSaveKey:V512_BACKUP};
+
+/* v5.2.2: Accessible scene controls and modal keyboard focus. */
+world.tabIndex=0;
+world.setAttribute('role','img');
+world.setAttribute('aria-label','Playable woodland scene. Use W A S D or arrow keys to move; E to interact, M for map, I for inventory.');
+world.setAttribute('aria-keyshortcuts','W A S D E M I');
+const v522OriginalOpenModal=openModal;
+const v522OriginalCloseModal=closeModal;
+let v522LastFocus=null;
+openModal=function(...args){
+ const wasOpen=$('modalBackdrop').classList.contains('open');
+ if(!wasOpen)v522LastFocus=document.activeElement;
+ v522OriginalOpenModal(...args);
+ const modal=$('modal');
+ modal.setAttribute('aria-modal','true');
+ modal.setAttribute('role','dialog');
+ queueMicrotask(()=>{
+  if(!$('modalBackdrop').classList.contains('open'))return;
+  const first=modal.querySelector('input:not([type=hidden]),select,textarea,button:not([disabled])');
+  (first||modal).focus();
+ });
+};
+closeModal=function(){
+ v522OriginalCloseModal();
+ if(v522LastFocus?.isConnected&&typeof v522LastFocus.focus==='function')v522LastFocus.focus();
+ v522LastFocus=null;
+};
+$('modal').tabIndex=-1;
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Tab'||!$('modalBackdrop').classList.contains('open'))return;
+ const options=[...$('modal').querySelectorAll('button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])')].filter(x=>x.getClientRects().length);
+ if(!options.length){e.preventDefault();$('modal').focus();return;}
+ const first=options[0],last=options.at(-1);
+ if(e.shiftKey&&(document.activeElement===first||!$('modal').contains(document.activeElement))){
+  e.preventDefault();last.focus();
+ }else if(!e.shiftKey&&(document.activeElement===last||!$('modal').contains(document.activeElement))){
+  e.preventDefault();first.focus();
+ }
+});
+const v522PreviousRender=render;
+render=function(){
+ v522PreviousRender();
+ if(state?.location&&WORLD[state.location])world.setAttribute('aria-label',
+   'Woodland scene: '+WORLD[state.location].name+'. Use W A S D to move, E to interact, M to open the map, and I for inventory.');
+};
+
+window.LittleTradingPost={...window.LittleTradingPost,
+ tutorialTestStep:step=>{
+  if(!window.__LTP_TEST__||!Number.isInteger(step)||step<0||step>7)return false;
+  state.tutorial={enabled:true,step,completed:false};render();save();return true;
+ }};
 load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
 })();
 </script>

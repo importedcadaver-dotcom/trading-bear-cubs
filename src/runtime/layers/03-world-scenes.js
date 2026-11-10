@@ -59,6 +59,12 @@ function scheduleV3(){
    if(n.id==='waffle')desired=ph===3?'playground':ph<=1?'post':'playground';
    if(n.id==='sprout')desired=ph===3?'playground':ph===1&&day%2===0?'post':'playground';
    if(n.id==='juniper')desired=ph===3?'woods':ph===1&&day%9===0?'trail':ph===1&&day%2===0?'post':'woods';
+   // First-time tutorial must not become impossible because a required cub left.
+   // The eight approved steps stay unchanged; only NPC availability is guided.
+   if(state.tutorial?.enabled&&!state.tutorial.completed){
+     if(n.id==='pebble'&&state.tutorial.step<=2)desired='den';
+     if(n.id==='fern'&&state.tutorial.step>=7)desired='post';
+   }
    if(!WORLD[desired])continue;
    if(n.travelPlan){n.travelPlan.nextDesired=desired;continue;}
    if(n.location===desired)continue;
