@@ -26,6 +26,7 @@ jobs:
           python tests/security_v512.py
           python tests/historical_save_migrations_v512.py
           python tests/world_ui_v52.py
+          python tests/physical_actions_v523.py
           python tests/accessibility_v522.py
       - name: Build portable game ZIP and checksums
         run: |
