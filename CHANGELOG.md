@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.2.0 — Woodland Travel & Practical Controls
+- Cub NPC schedules begin visible departures instead of teleporting instantly to distant scenes. Route progress is saved and arrival happens after real travel time.
+- Physical amenity approach and use intentions for available benches, water stations, nest spaces, play areas and workstations. Item/activity visuals follow the on-screen cub.
+- Cross-scene autonomous trades and same-scene social interactions are restricted when participants are in transit.
+- Added mobile touch movement pad, map and interact controls (minimum 48px), and reduced-motion item transfers.
+- Added a normal save export/import interface under Settings with file download, import, and pre-import backup restore.
+- Added browser regression of scene departures, arrivals, saved NPC travel states, repeated schedule changes, mobile touch and Settings save transfer.
+- Retained standalone HTML and save compatibility; no paid third-party dependencies.
+
+**Remaining:** The AI still has limited goal-driven activity selection, collision-aware NPC wayfinding is not complete, true human onboarding/accessibility testing is pending, and scene transitions are simplified. Issues #4 and #6 remain open until their full acceptance criteria are met.
+
+
 ## 5.1.2 — Security, Saves & Economy Integrity
 - Updated pinned Vite/Vitest dependencies and committed a lockfile; npm audit reports zero known vulnerabilities in the tested lockfile.
 - Updated supported GitHub Actions runners/actions, using locked npm ci and a deployment-blocking audit.
