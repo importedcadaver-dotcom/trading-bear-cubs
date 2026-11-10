@@ -41,13 +41,13 @@ def compile_game():
         "\nreturn { normalizedGoods,isNullBarter,transferDelta,canPay,applyDelta };\n})();\n"
     )
     inventory_source=INVENTORY_LIB.read_text(encoding="utf-8")
-    inventory_stripped=re.sub(r"\\bexport\\s+(?=function |const )","",inventory_source)
-    assert not re.search(r"\\b(?:import|export)\\s+",inventory_stripped), "Unsupported ESM import/export in inventory lib"
+    inventory_stripped=re.sub(r"\bexport\s+(?=function |const )","",inventory_source)
+    assert not re.search(r"\b(?:import|export)\s+",inventory_stripped), "Unsupported ESM import/export in inventory lib"
     inventory_library=(
-        "\\n/* Generated from src/lib/inventory-rules.mjs; same code in game and Vitest. */\\n"
-        "const SharedInventoryRules=(function(){\\n"
+        "\n/* Generated from src/lib/inventory-rules.mjs; same code in game and Vitest. */\n"
+        "const SharedInventoryRules=(function(){\n"
         +inventory_stripped+
-        "\\nreturn {count,quantity,add,canPay,spend};\\n})();\\n"
+        "\nreturn {count,quantity,add,canPay,spend};\n})();\n"
     )
     layers="".join((ROOT/"src/runtime/layers"/name).read_text(encoding="utf-8") for name in PARTS)
     assert layers.count("(() => {")==1, "Exactly one original game closure is expected"
