@@ -1935,8 +1935,36 @@ const v51PreviousItemAction=itemAction;itemAction=function(id,action){
  return result;
 };
 
+function v512RestorePreImportBackup(){
+  let data;
+  try{
+    data=localStorage.getItem(V512_BACKUP);
+    if(!data)throw Error('No pre-import backup exists in this browser.');
+    const parsed=JSON.parse(data);
+    v512ImportSave(parsed);
+    notify('Previous save restored. Your replaced save has been backed up.');
+    return true;
+  }catch(e){notify('Could not restore backup: '+e.message);return false;}
+}
+// Keep restore visible only when an actual backup exists; it cannot silently
+// rewrite progression without confirmation from the cub's player.
+const v512PreviousShowDev=showDev;
+showDev=function(){
+  v512PreviousShowDev();
+  let hasBackup=false;
+  try{hasBackup=!!localStorage.getItem(V512_BACKUP);}catch(e){}
+  const grid=$('modalBody')?.querySelector('.v3ModalGrid');
+  if(grid&&hasBackup){
+    const btn=document.createElement('button');btn.textContent='↶ Restore pre-import save';
+    btn.onclick=()=>openModal('RESTORE BACKED-UP SAVE?',
+      '<p>This replaces your current game with the save preserved before your most recent import. Your current game will be backed up first.</p>',
+      [{text:'CANCEL',secondary:true,action:showDev},
+       {text:'RESTORE PREVIOUS SAVE',action:()=>{closeModal();if(v512RestorePreImportBackup())render();}}]);
+    grid.appendChild(btn);
+  }
+};
 window.LittleTradingPost={...window.LittleTradingPost,importSave:v512ImportSave,validateSave:v512ValidateSave,
-  exportSave:()=>JSON.stringify(state),backupSaveKey:V512_BACKUP};
+  exportSave:()=>JSON.stringify(state),restoreBackup:v512RestorePreImportBackup,backupSaveKey:V512_BACKUP};
 load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
 })();
 </script>
