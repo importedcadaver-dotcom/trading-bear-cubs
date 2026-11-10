@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.2.1 — Offline-Safe Source Modularization
+- Extracted historically merged game engine into eight maintained JavaScript source layers, plus an HTML template.
+- Added deterministic dependency-free Python compiler producing byte-complete standalone `index.html`; CI and releases reject stale builds.
+- Unified the live game’s no-op barter guard with the authoritative `src/lib/barter-rules.mjs` function already tested by Vitest.
+- Added 50 repeat UI swaps to regression-test the closed reputation exploit.
+- Marked the generated HTML as derived source for clearer PR reviews, while preserving in-browser and offline runtime behavior.
+- No paid tools or external runtime dependencies.
+
+**Remaining:** The layers still share one legacy closure; not all rendering, NPC behavior, input and save logic are independent modules yet. Issue #17 remains open for deeper extraction and dead-code removal once comprehensive parity tests are complete.
+
+
 ## 5.2.0 — Woodland Travel & Practical Controls
 - Cub NPC schedules begin visible departures instead of teleporting instantly to distant scenes. Route progress is saved and arrival happens after real travel time.
 - Physical amenity approach and use intentions for available benches, water stations, nest spaces, play areas and workstations. Item/activity visuals follow the on-screen cub.
