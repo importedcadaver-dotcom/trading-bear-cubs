@@ -8,6 +8,6 @@
 - The user's documented decisions in `docs/PROJECT_HISTORY.md` and versioned requests outrank speculative AI suggestions. Tutorial duration remains undecided.
 - Preserve the fictional drug encyclopedia's Edition 1.0 as frozen lore. Existing fictional cub use/trading is a game mechanic with serious simulation consequences; do not write real-world preparation, dosing or trafficking instructions.
 - Essential invariants: no negative inventory, item transfers conserve stock, no rewards for null barter, actors occupy one location, remote interaction requires real proximity, no new origin-sensitive save breakage.
-- **P0 tests:** `python tests/reliability_v51.py`. **Economy:** `npm run test`. **Property tests:** `pytest -q tests/test_state_invariants_v51.py`.
+- **P0 tests:** `python tests/reliability_v51.py`. **Save integrity:** `python tests/security_v512.py`. **Real archived v1–v5 compatibility:** `python tests/historical_save_migrations_v512.py`. **Economy:** `npm run test`. **Property tests:** `pytest -q tests/test_state_invariants_v51.py`.
 - Do not state that passing unit tests proves the game is fun, that browser storage migrations are proven, or that every requested feature has been implemented.
 - For large work, use PR reviews, keep test artifacts, document limitations, and update `CHANGELOG.md` and `VERSION` on a real release.
