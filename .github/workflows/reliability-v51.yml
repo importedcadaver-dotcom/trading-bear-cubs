@@ -46,6 +46,8 @@ jobs:
         run: python tests/historical_save_migrations_v512.py
       - name: Test physical NPC travel, user settings and mobile touch
         run: python tests/world_ui_v52.py
+      - name: Test tutorial accessibility and mobile target sizing
+        run: python tests/accessibility_v522.py
       - name: Upload screenshot and interaction trace
         if: always()
         uses: actions/upload-artifact@v7
