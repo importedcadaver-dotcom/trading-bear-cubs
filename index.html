@@ -61,8 +61,8 @@
 /* Generated from src/lib/barter-rules.mjs; runtime and Vitest share this authoritative code. */
 const SharedBarterRules=(function(){
 // Pure utilities for the staged extraction of the legacy inline game.
-// The CURRENT runtime still contains a copy of the no-op guard; Playwright
-// integration tests verify actual behavior independently of these unit tests.
+// This source is inlined into the standalone game by build_standalone.py.
+// Vitest and the actual runtime therefore execute the same null-trade rule.
 function normalizedGoods(goods = {}) {
   return Object.fromEntries(Object.entries(goods)
     .filter(([id, count]) => id && Number.isInteger(count) && count > 0)
@@ -1640,7 +1640,7 @@ opening=function(){v4ShowMenu();};
 
 /* THE LITTLE TRADING POST v5 — Living World & Playfeel overhaul.
    Source-level extension of the original v4 single-file simulation. */
-const V5_VERSION='5.2.0';
+const V5_VERSION='5.2.1';
 const v5OriginalZip='the-little-trading-post-v4-site(2).zip';
 const v5Style=document.createElement('style');v5Style.id='v5-theme';v5Style.textContent=`
 :root{--pine:#193f32;--deep:#102c26;--cream:#fff7e3;--honey:#e6b763;--berry:#a95760}
