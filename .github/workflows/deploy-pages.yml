@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "index.html"
+      - "src/runtime/**"
+      - "src/lib/barter-rules.mjs"
+      - "scripts/build_standalone.py"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -22,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Verify generated HTML matches maintained source layers
+        run: python3 scripts/build_standalone.py --check
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'

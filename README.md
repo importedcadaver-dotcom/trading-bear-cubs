@@ -2,7 +2,7 @@
 
 **A playable, offline-first browser game about a young brown bear cub who owns a woodland trading post.** Other cubs have independent wants, memories, families, possessions, and their own trading lives.
 
-> Project owner: `importedcadaver-dotcom` · Current playable build: **v5.2.0** · Status: **active private-game development / unfinished systems**
+> Project owner: `importedcadaver-dotcom` · Current playable build: **v5.2.1** · Status: **active private-game development / unfinished systems**
 >
 > **Content warning:** Fictional underage animal characters, substance use/addiction, contraband, coercion, starvation, injury and death can occur. These are game systems with consequences, not real-world instructions.
 
@@ -35,6 +35,17 @@ GitHub Pages is enabled and the [deployment workflow](.github/workflows/deploy-p
 | [`docs/PROJECT_HISTORY.md`](docs/PROJECT_HISTORY.md) | Design decisions, deferred requests, provenance |
 | [`archives/`](archives/) | Previously committed reconstructed ZIP snapshots; new generated archives and screenshots are provided as downloadable [Actions run artifacts](../../actions/workflows/build-downloads.yml), not pushed into protected `main` |
 
+
+## Maintained source and offline build (v5.2.1)
+
+The deployed `index.html` is a **generated standalone HTML build** and still works without installing anything. Edit the smaller files in [`src/runtime/layers/`](src/runtime/layers/) and [`src/lib/barter-rules.mjs`](src/lib/barter-rules.mjs), then run:
+
+```bash
+python scripts/build_standalone.py
+python scripts/build_standalone.py --check
+```
+
+GitHub Actions refuses to deploy if the generated HTML doesn't match its source. Vitest and the actual game now share the authoritative `isNullBarter` rule. The runtime still has a single legacy closure split into source layers; deeper modularization remains a tracked task.
 
 ## Development and automated QA
 
