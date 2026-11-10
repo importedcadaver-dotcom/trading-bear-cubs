@@ -21,6 +21,7 @@ PARTS=[
     "05-mouse-hitboxes.js",
     "06-v5-expansion.js",
     "07-actor-travel.js",
+    "09-physical-encounters.js",
     "08-mobile-and-saves.js",
 ]
 MARKER="<!--LTP_GAME_BUNDLE-->"
