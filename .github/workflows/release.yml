@@ -10,8 +10,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Install browser test tools
@@ -19,7 +19,9 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
       - name: Verify game before publishing release
-        run: python tests/reliability_v51.py
+        run: |
+          python tests/reliability_v51.py
+          python tests/security_v512.py
       - name: Build portable game ZIP and checksums
         run: |
           VERSION="$(cat VERSION)"
