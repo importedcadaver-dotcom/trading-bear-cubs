@@ -57,11 +57,11 @@ function save(){
 }
 function rng(){state.rand=(Math.imul(state.rand,1664525)+1013904223)>>>0;return state.rand/4294967296}
 function randomOf(a){return a[Math.floor(rng()*a.length)]}
-function count(inv){return Object.values(inv).reduce((a,v)=>a+(Number.isFinite(v)?v:0),0)}
-function quantity(inv,key){return Math.max(0,Number(inv[key]||0))}
-function add(inv,key,amount=1){const next=quantity(inv,key)+amount; if(next<=0)delete inv[key];else inv[key]=next}
-function canPay(inv,cost){return Object.entries(cost).every(([k,n])=>quantity(inv,k)>=n)}
-function spend(inv,cost){for(const [k,n] of Object.entries(cost))add(inv,k,-n)}
+function count(inv){return SharedInventoryRules.count(inv)}
+function quantity(inv,key){return SharedInventoryRules.quantity(inv,key)}
+function add(inv,key,amount=1){return SharedInventoryRules.add(inv,key,amount)}
+function canPay(inv,cost){return SharedInventoryRules.canPay(inv,cost)}
+function spend(inv,cost){return SharedInventoryRules.spend(inv,cost)}
 function capacity(){return 24+(state.upgrades.includes('shelf')?8:0)}
 function npc(){return state.npcs.find(n=>n.id===state.chosen)||state.npcs[0]}
 function itemVal(n,id){let v=base[id]||0;v+=quantity(n.inv,id)>0?-Math.min(2,quantity(n.inv,id)):1;if(id===n.love)v+=8;if(id===n.other)v+=3;if((state.event==='Toy parade'&&['mouse','fish'].includes(id))||(state.event==='Rain clouds'&&['stick','ribbon'].includes(id))||(state.event==='Blue moon'&&['stone','feather'].includes(id)))v+=3;return v;}
