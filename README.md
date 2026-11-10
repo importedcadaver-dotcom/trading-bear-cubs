@@ -33,7 +33,7 @@ GitHub Pages is enabled and the [deployment workflow](.github/workflows/deploy-p
 | [`CHANGELOG.md`](CHANGELOG.md) | Release changes and known limits |
 | [`docs/briefs/`](docs/briefs/) | Historical design prompts and development instructions |
 | [`docs/PROJECT_HISTORY.md`](docs/PROJECT_HISTORY.md) | Design decisions, deferred requests, provenance |
-| [`archives/`](archives/) | Reconstructed downloadable version ZIPs if the archive-generation workflow has run |
+| [`archives/`](archives/) | Previously committed reconstructed ZIP snapshots; new generated archives and screenshots are provided as downloadable [Actions run artifacts](../../actions/workflows/build-downloads.yml), not pushed into protected `main` |
 
 
 ## Development and automated QA
