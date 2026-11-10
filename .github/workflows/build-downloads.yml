@@ -17,6 +17,8 @@ on:
       - "index.html"
       - "versions/**"
       - "scripts/**"
+      - "src/runtime/**"
+      - "src/lib/barter-rules.mjs"
       - ".github/workflows/build-downloads.yml"
 
 # Build outputs are downloadable Actions artifacts, never direct pushes to protected main.
@@ -29,10 +31,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Verify generated HTML matches maintained source layers
-        run: python3 scripts/build_standalone.py --check
         with:
           persist-credentials: false
+      - name: Verify generated HTML matches maintained source layers
+        run: python3 scripts/build_standalone.py --check
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
