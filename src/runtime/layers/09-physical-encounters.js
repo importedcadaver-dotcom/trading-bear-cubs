@@ -147,17 +147,16 @@ function v54FinishMeeting(a,b,plan){
  }
 }
 function v54FrameMeetings(dT){
- const processed=new Set();
+ // Never let array order suppress the lead of a pair whose partner happens
+ // to occur earlier in the NPC list (for example Pebble before Moss).
  for(const a of state.npcs){
   const plan=a.meetPlan;
-  if(!plan||processed.has(a.id))continue;
+  if(!plan||plan.role!=='lead')continue;
   const b=state.npcs.find(n=>n.id===plan.partner);
-  processed.add(a.id);if(b)processed.add(b.id);
   if(!b||!b.meetPlan||b.meetPlan.partner!==a.id||
      a.location!==b.location||a.location!==plan.site||a.travelPlan||b.travelPlan){
     v54CancelMeeting(a,b);continue;
   }
-  if(plan.role!=='lead')continue;
   if(plan.stage==='approach'){
     const aa=v53AdvanceToward(a,plan.target,dT,73);
     const bb=v53AdvanceToward(b,b.meetPlan.target,dT,73);
@@ -169,14 +168,25 @@ function v54FrameMeetings(dT){
     if(plan.elapsed>=(plan.kind==='wrestle'?2.5:1.5))v54FinishMeeting(a,b,plan);
   }
  }
+ // Corrupt/partial old save data must not strand a partner forever.
+ for(const n of state.npcs){
+   if(n.meetPlan?.role!=='partner')continue;
+   const lead=state.npcs.find(a=>a.id===n.meetPlan.partner);
+   if(!lead||lead.meetPlan?.partner!==n.id||lead.meetPlan.role!=='lead'){
+     n.meetPlan=null;n.activity='browsing';
+   }
+ }
 }
 const v54PrevFrame=v53NpcFrame;
 v53NpcFrame=function(dT){
  if(!state?.npcs)return;
  v54FrameMeetings(dT);
- // A cub in an encounter cannot independently start using furniture until
- // the interaction resolves. The legacy amenities loop sees activity=walk.
+ // Keep the old furniture loop from dragging a wrestler away mid-scene.
+ const busy=state.npcs.filter(n=>n.meetPlan&&!n.travelPlan);
+ const previous=busy.map(n=>n.activity);
+ for(const n of busy)n.activity='walk';
  v54PrevFrame(dT);
+ busy.forEach((n,i)=>{if(n.meetPlan)n.activity=previous[i];});
 };
 bumpSocial=function(){
  const pairs=[];
