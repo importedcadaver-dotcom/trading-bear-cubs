@@ -311,6 +311,7 @@ function v51ItemCanvas(id){
  return v51SpriteCache.get(id);
 }
 function v51Flight(id,from,to,duration=1050){
+ if(state?.options?.reducedMotion||window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
  const now=performance.now();
  v51Transfers.push({id,from:from.slice(),to:to.slice(),begin:now,end:now+duration});
 }
