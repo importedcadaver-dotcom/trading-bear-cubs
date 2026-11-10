@@ -88,6 +88,14 @@ with sync_playwright() as p:
         ok("Identical exchange cannot award reputation or count", after["rep"]==before["rep"] and after["trades"]==before["trades"])
         ok("Identical exchange conserves inventory",after["inv"]==before["inv"])
         ok("Identical exchange cannot farm friendship",next(n["rel"] for n in after["npcs"] if n["id"]=="fern")==next(n["rel"] for n in before["npcs"] if n["id"]=="fern"))
+        for _ in range(50):
+            page2.locator("#tradeBtn").click(timeout=3000)
+        repeated=state(page2)
+        ok("50 further identical barter attempts cannot farm reputation, achievements or friendship",
+           repeated["rep"]==before["rep"] and repeated["trades"]==before["trades"]
+           and repeated["inv"]==before["inv"]
+           and next(n["rel"] for n in repeated["npcs"] if n["id"]=="fern")
+               ==next(n["rel"] for n in before["npcs"] if n["id"]=="fern"))
         page2.screenshot(path=str(CAPTURES/"null-trade.png"),full_page=True)
         # Real browser origin save/restoration check (not an opaque data URI).
         page2.evaluate("window.localStorage.setItem('v51_test_origin','present')")
