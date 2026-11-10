@@ -12,6 +12,7 @@ from difflib import unified_diff
 ROOT=Path(__file__).resolve().parents[1]
 TEMPLATE=ROOT/"src/runtime/standalone-template.html"
 LIB=ROOT/"src/lib/barter-rules.mjs"
+INVENTORY_LIB=ROOT/"src/lib/inventory-rules.mjs"
 OUT=ROOT/"index.html"
 PARTS=[
     "01-trading-core.js",
@@ -39,10 +40,19 @@ def compile_game():
         +stripped+
         "\nreturn { normalizedGoods,isNullBarter,transferDelta,canPay,applyDelta };\n})();\n"
     )
+    inventory_source=INVENTORY_LIB.read_text(encoding="utf-8")
+    inventory_stripped=re.sub(r"\bexport\s+(?=function |const )","",inventory_source)
+    assert not re.search(r"\b(?:import|export)\s+",inventory_stripped), "Unsupported ESM import/export in inventory lib"
+    inventory_library=(
+        "\n/* Generated from src/lib/inventory-rules.mjs; same code in game and Vitest. */\n"
+        "const SharedInventoryRules=(function(){\n"
+        +inventory_stripped+
+        "\nreturn {count,quantity,add,canPay,spend};\n})();\n"
+    )
     layers="".join((ROOT/"src/runtime/layers"/name).read_text(encoding="utf-8") for name in PARTS)
     assert layers.count("(() => {")==1, "Exactly one original game closure is expected"
     assert layers.rstrip().endswith("})();"),"Game closure is incomplete"
-    return template.replace(MARKER,"<script>"+library+layers+"</script>")
+    return template.replace(MARKER,"<script>"+library+inventory_library+layers+"</script>")
 
 
 def main():
