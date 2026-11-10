@@ -10,7 +10,7 @@
 - New browser tests for malformed saves, migrations, security boundaries, full-bag trades and save failures.
 - No new paid dependencies; standalone offline HTML remains supported.
 
-**Remaining:** comprehensive migration fixtures for every historic version, multi-hour gameplay stress tests, complete engine modularization, continuous NPC navigation and full accessibility pass.
+**Remaining:** long-lived real-user save fixtures beyond newly verified archived v1–v5 saves, multi-hour gameplay stress tests, complete engine modularization, continuous NPC navigation and full accessibility pass.
 
 
 ## 5.1.1 — Patch-release metadata
