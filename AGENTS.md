@@ -2,6 +2,7 @@
 
 **Repository:** importedcadaver-dotcom/trading-bear-cubs. This repository is dedicated solely to The Little Trading Post.
 
+- The deployed root `index.html` is **generated** from `src/runtime/standalone-template.html`, eight files under `src/runtime/layers/`, and shared `src/lib/barter-rules.mjs`. Edit those maintained source files, run `python scripts/build_standalone.py`, commit both source and generated `index.html`, and verify `--check`. Never patch root generated HTML alone.
 - Main branch hosts the current published game. Use **one feature branch per agent/task**, open a PR, run CI, and do not push untested changes directly to main.
 - Root `index.html` is the offline-safe production game. `versions/v1–v5` preserve old builds; never silently overwrite the historical versions.
 - Preserve approved family canon: the player, Fern and Pebble are 11-month-old biological littermates; separate romantic/gender policy debates from user-requested game settings.
