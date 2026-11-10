@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.2.2 — Tutorial Reliability & Keyboard Accessibility
+- Tutorial objectives remain eight steps; clearer step-by-step guidance is visible without adding progression gates.
+- Pebble is kept in Mama's Den when needed by the opening sibling objective; Fern returns to the post for the first required trade.
+- Canvas now has an accessible scene description and keyboard control instructions.
+- Modal dialogues move keyboard focus into the dialog, loop Tab navigation through active controls, and restore focus when dismissed.
+- Reduced-motion settings skip decorative item-flight animations rather than displaying unnecessary flashes.
+- Added Playwright checks for tutorial schedule requirements, modal focus, keyboard dismissal, 390/430px screens and minimum 44px touch targets.
+
+**Not complete:** Human-uninformed first-ten-minute usability study, full screen-reader navigation review, alternative input devices and thorough NPC collision-grid pathing. Issue #6 remains open for these acceptance tests.
+
+
 ## 5.2.1 — Offline-Safe Source Modularization
 - Extracted historically merged game engine into eight maintained JavaScript source layers, plus an HTML template.
 - Added deterministic dependency-free Python compiler producing byte-complete standalone `index.html`; CI and releases reject stale builds.
