@@ -68,7 +68,7 @@ jobs:
           cp index.html _site/index.html
           if [ -d assets ]; then cp -r assets _site/assets; fi
           if [ -d archives ]; then cp -r archives _site/archives; fi
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
