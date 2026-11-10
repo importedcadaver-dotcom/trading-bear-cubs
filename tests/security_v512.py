@@ -113,6 +113,9 @@ with sync_playwright() as p:
         cap["npcs"][0]["dependency"]["nic"]=70
         page.evaluate("(value) => window.LittleTradingPost.importSave(value)",cap)
         page.evaluate("window.LittleTradingPost.selectNPC('fern')")
+        # Selecting the cub opens a dialogue, but the trading panel stays hidden
+        # until the player explicitly chooses barter.
+        page.locator("#v5BarterOption").click()
         offer_name = page.evaluate("window.LittleTradingPost.items.vape_berry.short")
         take_name = page.evaluate("(id) => window.LittleTradingPost.items[id].short",sentimental)
         page.locator("#yourTrade button.goods").filter(has_text=offer_name).first.click()
@@ -125,6 +128,15 @@ with sync_playwright() as p:
         check("full" in page.locator("#toast").inner_text().lower()
               or "cannot hold" in page.locator("#tradeResult").inner_text().lower(),
               "Overcapacity trade provides clear feedback")
+
+        # The pre-import snapshot is recoverable from an actual user-facing
+        # developer-menu option; restoration itself swaps the current save into
+        # the backup slot, so it is reversible.
+        backup = page.evaluate("localStorage.getItem(window.LittleTradingPost.backupSaveKey)")
+        check(bool(backup),"Successful imports create a recoverable backup")
+        page.evaluate("window.LittleTradingPost.restoreBackup()")
+        check(state()["inv"] != initial["inv"] or state()["trades"] == initial["trades"],
+              "Backup restore returns a valid game state")
 
         # Save failures must be surfaced to the player rather than swallowed.
         result=page.evaluate("""() => {
