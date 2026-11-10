@@ -56,6 +56,8 @@ jobs:
         run: python tests/historical_save_migrations_v512.py
       - name: Test physical NPC travel, user settings and mobile touch
         run: python tests/world_ui_v52.py
+      - name: Test physical social encounters and NPC barter conservation
+        run: python tests/physical_actions_v523.py
       - name: Upload browser trace and screenshots
         if: always()
         uses: actions/upload-artifact@v7
