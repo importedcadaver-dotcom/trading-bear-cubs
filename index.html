@@ -58,6 +58,49 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="modalBackdrop" class="modalBackdrop" role="presentation"><div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle"></h2><div id="modalBody"></div><div id="modalBtns" class="modalBtns"></div></div></div>
 <script>
+/* Generated from src/lib/barter-rules.mjs; runtime and Vitest share this authoritative code. */
+const SharedBarterRules=(function(){
+// Pure utilities for the staged extraction of the legacy inline game.
+// The CURRENT runtime still contains a copy of the no-op guard; Playwright
+// integration tests verify actual behavior independently of these unit tests.
+function normalizedGoods(goods = {}) {
+  return Object.fromEntries(Object.entries(goods)
+    .filter(([id, count]) => id && Number.isInteger(count) && count > 0)
+    .map(([id, count]) => [id, count]));
+}
+
+function isNullBarter(offered = {}, requested = {}) {
+  const left = normalizedGoods(offered);
+  const right = normalizedGoods(requested);
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  return keys.size > 0 && [...keys].every(id => (left[id] || 0) === (right[id] || 0));
+}
+
+function transferDelta(offered = {}, requested = {}) {
+  const left = normalizedGoods(offered), right = normalizedGoods(requested);
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  return Object.fromEntries([...keys].map(id => [id, (right[id] || 0) - (left[id] || 0)])
+    .filter(([, amount]) => amount !== 0));
+}
+
+function canPay(inventory, goods) {
+  return Object.entries(normalizedGoods(goods))
+    .every(([id, count]) => Number.isInteger(inventory[id] || 0) && (inventory[id] || 0) >= count);
+}
+
+function applyDelta(inventory, delta) {
+  const next = { ...inventory };
+  for (const [id, count] of Object.entries(delta)) {
+    if (!Number.isInteger(count)) throw new Error('Noninteger item transaction');
+    next[id] = (next[id] || 0) + count;
+    if (next[id] < 0) throw new Error('Negative inventory quantity');
+  }
+  return next;
+}
+
+return { normalizedGoods,isNullBarter,transferDelta,canPay,applyDelta };
+})();
+
 'use strict';
 (() => {
 const items = {
@@ -1706,8 +1749,7 @@ function v5Reason(n){if(n.location!==state.location)return `${n.name} isn't in t
 const v5OldNegotiate=negotiate;negotiate=function(){const n=npc();
  if(state.dead||!v5NearCub(n))return notify('You must stand near this cub to barter.');
 
- const keys=new Set([...Object.keys(offered),...Object.keys(wanted)]);
- const isNull=keys.size>0&&[...keys].every(id=>(offered[id]||0)===(wanted[id]||0));
+ const isNull=SharedBarterRules.isNullBarter(offered,wanted);
  if(isNull){
    const msg=`${n.name}: “But we're swapping exactly the same treasures! Nothing changes.” Try a different item or use the Gift action.`;
    tradeResult(msg,false);say(n.id,'That is the same treasure on both sides!');notify('No reputation for an identical swap.');return;
