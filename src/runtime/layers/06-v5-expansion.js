@@ -270,8 +270,19 @@ function v51DisplayNeeds(){
   return `<div class="v51Need" title="${name}: ${num}/100"><b>${name}</b><div class="v51NeedTrack"><i style="width:${num}%;background:${fill}"></i></div><strong>${num}</strong></div>`;
  }).join('');
  const t=state.tutorial;
- if(t?.enabled&&!t.completed&&state.location==='den'&&t.step===0){
-  v51Beacon.style.display='block';v51Beacon.textContent='✦ FIND MAMA · Click the large bear by the den exit, or walk to her and press E';
+ if(t?.enabled&&!t.completed){
+  const help=[
+   '1/8 · FIND MAMA · Click the large bear or walk up and press E',
+   '2/8 · BREAKFAST · Interact with the food pile near your nest',
+   '3/8 · PEBBLE · Find your littermate in the den and press E',
+   '4/8 · WOODLAND · Open the map (M) to travel to the Deep Woodland',
+   '5/8 · FIND GOODS · Walk to berry bushes and forage',
+   '6/8 · YOUR POST · Use the map (M) to return to Whisperwood Clearing',
+   '7/8 · BACKPACK · Press I or open your bag to inspect items',
+   '8/8 · YOUR FIRST TRADE · Meet Fern at the post and barter face-to-face'
+  ];
+  v51Beacon.style.display='block';
+  v51Beacon.textContent='✦ '+help[Math.max(0,Math.min(7,t.step))];
  }else v51Beacon.style.display='none';
 }
 $('v51NeedDetails').onclick=()=>openModal('YOUR LITTLE CUB’S NEEDS',
