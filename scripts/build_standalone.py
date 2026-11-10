@@ -39,7 +39,7 @@ def compile_game():
         "\nreturn { normalizedGoods,isNullBarter,transferDelta,canPay,applyDelta };\n})();\n"
     )
     layers="".join((ROOT/"src/runtime/layers"/name).read_text(encoding="utf-8") for name in PARTS)
-    assert layers.count("(function(){")==1, "Exactly one original game closure is expected"
+    assert layers.count("(() => {")==1, "Exactly one original game closure is expected"
     assert layers.rstrip().endswith("})();"),"Game closure is incomplete"
     return template.replace(MARKER,"<script>"+library+layers+"</script>")
 
