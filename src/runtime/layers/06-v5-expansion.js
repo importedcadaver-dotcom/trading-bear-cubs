@@ -1,6 +1,6 @@
 /* THE LITTLE TRADING POST v5 — Living World & Playfeel overhaul.
    Source-level extension of the original v4 single-file simulation. */
-const V5_VERSION='5.2.0';
+const V5_VERSION='5.2.1';
 const v5OriginalZip='the-little-trading-post-v4-site(2).zip';
 const v5Style=document.createElement('style');v5Style.id='v5-theme';v5Style.textContent=`
 :root{--pine:#193f32;--deep:#102c26;--cream:#fff7e3;--honey:#e6b763;--berry:#a95760}
