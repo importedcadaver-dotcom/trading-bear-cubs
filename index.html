@@ -129,7 +129,7 @@ function tradeMood(){const n=npc(),a=count(offered),b=count(wanted);if(!a||!b)re
 function log(msg){state.log.unshift({s:msg,d:state.day});state.log=state.log.slice(0,32)}
 function notify(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2800)}
 function tick(steps=1){for(let i=0;i<steps;i++){state.tick++;if(state.tick%5===0) npcTrade();if(state.tick%8===0) event();if(state.tick%14===0) newDay(false);}save();render()}
-function npcTrade(){const shuffled=[...state.npcs].sort(()=>rng()-.5);let best=null;for(let i=0;i<shuffled.length;i++){for(let j=i+1;j<shuffled.length;j++){const a=shuffled[i],b=shuffled[j];for(const x of Object.keys(a.inv).filter(k=>a.inv[k]>0)){for(const y of Object.keys(b.inv).filter(k=>b.inv[k]>0&&k!==x)){const aGain=itemVal(a,y)-itemVal(a,x),bGain=itemVal(b,x)-itemVal(b,y);if(aGain>=-1 && bGain>=-1 && aGain+bGain>1){const score=aGain+bGain;if(!best||score>best.score){best={a,b,x,y,score}}}}}}}if(best){add(best.a.inv,best.x,-1);add(best.a.inv,best.y,1);add(best.b.inv,best.y,-1);add(best.b.inv,best.x,1);best.a.deals++;best.b.deals++;const times=state.day;log(`${best.a.name} traded ${items[best.x].name.toLowerCase()} to ${best.b.name} for ${items[best.y].name.toLowerCase()}.`);if(best.a.id===state.chosen||best.b.id===state.chosen)tradeResult(`${best.a.name} and ${best.b.name} made a deal while you were watching.`,false);return true;} else if(rng()<.42){const a=randomOf(state.npcs),b=randomOf(state.npcs.filter(n=>n.id!==a.id));log(`${a.name} tried to bargain with ${b.name}, but neither wanted to give anything up.`)}return false}
+function npcTrade(){const shuffled=[...state.npcs].sort(()=>rng()-.5);let best=null;for(let i=0;i<shuffled.length;i++){for(let j=i+1;j<shuffled.length;j++){const a=shuffled[i],b=shuffled[j];if(a.location!==b.location||a.travelPlan||b.travelPlan)continue;for(const x of Object.keys(a.inv).filter(k=>a.inv[k]>0)){for(const y of Object.keys(b.inv).filter(k=>b.inv[k]>0&&k!==x)){const aGain=itemVal(a,y)-itemVal(a,x),bGain=itemVal(b,x)-itemVal(b,y);if(aGain>=-1 && bGain>=-1 && aGain+bGain>1){const score=aGain+bGain;if(!best||score>best.score){best={a,b,x,y,score}}}}}}}if(best){add(best.a.inv,best.x,-1);add(best.a.inv,best.y,1);add(best.b.inv,best.y,-1);add(best.b.inv,best.x,1);best.a.deals++;best.b.deals++;const times=state.day;log(`${best.a.name} traded ${items[best.x].name.toLowerCase()} to ${best.b.name} for ${items[best.y].name.toLowerCase()}.`);if(best.a.id===state.chosen||best.b.id===state.chosen)tradeResult(`${best.a.name} and ${best.b.name} made a deal while you were watching.`,false);return true;} else if(rng()<.42){const a=randomOf(state.npcs),b=randomOf(state.npcs.filter(n=>n.id!==a.id));log(`${a.name} tried to bargain with ${b.name}, but neither wanted to give anything up.`)}return false}
 function event(){const opts=['Toy parade','Rain clouds','Blue moon','Ordinary afternoon'];const prev=state.event;state.event=randomOf(opts);if(prev===state.event)state.event=opts[(opts.indexOf(prev)+1)%opts.length];state.weather=state.event==='Rain clouds'?'rainy':'sunny';const captions={'Toy parade':'A game of make-believe makes handmade toys especially popular.','Rain clouds':'Dark clouds roll in. Wood and shelter supplies are suddenly desirable.','Blue moon':'Rumors of a blue moon make blue treasures highly prized.','Ordinary afternoon':'The market settles into a comfortable hum.'};log(captions[state.event]);if(state.weather==='rainy'&&!state.upgrades.includes('canopy')&&!state.upgrades.includes('shelter')&&quantity(state.inv,'berry')>0&&rng()<.45){add(state.inv,'berry',-1);log('A sudden drizzle spoiled one berry. A canopy could have helped!')} }
 function newDay(manual=true){state.day++;state.foraged=0;state.gossip=0;state.visits++;if(manual){npcTrade();if(state.day%2===0)event();log('The morning light returns. The clearing has fresh things to find.');}if(state.day%5===0&&count(state.inv)<capacity()){const friend=state.npcs.find(n=>n.rel>=6&&quantity(n.inv,'berry')>0);if(friend){add(friend.inv,'berry',-1);add(state.inv,'berry',1);log(`${friend.name} brought you a berry as a friendship gift.`)}}if(state.day%3===0){const n=randomOf(state.npcs);const k=randomOf(['berry','stick','acorn']);add(n.inv,k,1);log(`${n.name} found ${items[k].name.toLowerCase()} on a walk.`)}if(manual)notify('A new morning in Whisperwood!');save();render()}
 function forage(){const limit=2+(state.upgrades.includes('cart')?1:0);if(state.foraged>=limit)return notify('No more good finds today. Try a new morning.');if(count(state.inv)>=capacity())return notify('Your backpack is full. Trade or build more storage.');state.foraged++;state.totalFound++;const roll=rng();let got=roll<.29?'berry':roll<.53?'stick':roll<.67?'acorn':roll<.78?'shell':roll<.87?'feather':roll<.94?'button':roll<.985?'ribbon':'stone';if(state.rep>=12&&state.day>=6&&!quantity(state.inv,'vape')&&rng()<.025){got='vape';state.rep+=3;log('The impossible find: a sealed, inactive human vape! You lock the forbidden object safely away as a museum curiosity. Nobody may use or trade it. (+3 reputation)')}add(state.inv,got,1);if(got!=='vape')log(`You discovered ${items[got].name.toLowerCase()} while exploring by the clearing.`);notify(got==='vape'?'MYTH FOUND: a sealed, inert human relic!':'Found: '+items[got].name+'!');sound(480);tick(1)}
@@ -956,17 +956,27 @@ function travel(to,cheat=false){if(!WORLD[to])return false;if(state.dead)return 
  say('you',to==='den'?"Mama, I'm home!":`Made it to ${WORLD[to].short}!`);
  document.querySelector('.worldLabel').textContent='✿ '+WORLD[to].name.toUpperCase();save();render();return true;}
 function scheduleV3(){
- for(const n of state.npcs){let desired=scenesDefault[n.id];const day=state.day,ph=phase();
- if(n.id==='pebble')desired=ph===3||ph===0?'den':day%3===0?'river':ph===1?'pebble':'post';
- if(n.id==='fern')desired=ph===3||ph===0?'den':ph===1?'post':'playground';
- if(n.id==='moss')desired=ph===3?'rival':day%4===0&&ph===1?'trail':day%2===0&&ph===1?'post':'rival';
- if(n.id==='waffle')desired=ph===3?'playground':ph<=1?'post':'playground';
- if(n.id==='sprout')desired=ph===3?'playground':ph===1&&day%2===0?'post':'playground';
- if(n.id==='juniper')desired=ph===3?'woods':ph===1&&day%9===0?'trail':ph===1&&day%2===0?'post':'woods';
- if(n.location!==desired){n.location=desired;n.worldPos=origin[desired].slice();n.worldTarget=n.worldPos.slice();n.worldPos[0]+=({fern:-96,pebble:90,waffle:-95,juniper:95,sprout:-50,moss:135}[n.id]||0);n.worldTarget[0]=n.worldPos[0];}
- }}
+ for(const n of state.npcs){
+   let desired=scenesDefault[n.id];const day=state.day,ph=phase();
+   if(n.id==='pebble')desired=ph===3||ph===0?'den':day%3===0?'river':ph===1?'pebble':'post';
+   if(n.id==='fern')desired=ph===3||ph===0?'den':ph===1?'post':'playground';
+   if(n.id==='moss')desired=ph===3?'rival':day%4===0&&ph===1?'trail':day%2===0&&ph===1?'post':'rival';
+   if(n.id==='waffle')desired=ph===3?'playground':ph<=1?'post':'playground';
+   if(n.id==='sprout')desired=ph===3?'playground':ph===1&&day%2===0?'post':'playground';
+   if(n.id==='juniper')desired=ph===3?'woods':ph===1&&day%9===0?'trail':ph===1&&day%2===0?'post':'woods';
+   if(!WORLD[desired])continue;
+   if(n.travelPlan){n.travelPlan.nextDesired=desired;continue;}
+   if(n.location===desired)continue;
+   const path=route(n.location,desired);
+   if(!Array.isArray(path)||path[0]!==n.location||path.at(-1)!==desired)continue;
+   // A cub must physically reach the exit before entering the connected route.
+   n.travelPlan={from:n.location,to:desired,path,stage:'leaving',elapsed:0,
+     waypoints:[[n.worldPos?.[0]||350,382],[719,382]],nextDesired:desired};
+   n.activity='walk';n.worldTarget=n.travelPlan.waypoints[0].slice();
+ }
+}
 // A social action cannot take place between characters in different physical locations.
-bumpSocial=function(){const pairs=[];for(const a of state.npcs)for(const b of state.npcs)if(a.id<b.id&&a.location===b.location&&WORLD[a.location])pairs.push([a,b]);if(!pairs.length)return false;
+bumpSocial=function(){const pairs=[];for(const a of state.npcs)for(const b of state.npcs)if(a.id<b.id&&a.location===b.location&&WORLD[a.location]&&!a.travelPlan&&!b.travelPlan)pairs.push([a,b]);if(!pairs.length)return false;
  const [a,b]=randomOf(pairs),kind=phase()===3?'nap':a.temper==='competitive'&&rng()<.4?'argue':randomOf(['wrestle','chat','play','share','gather']);a.activity=b.activity=kind;
  const delta=kind==='argue'?-1:1;a.relTo[b.id]=clamp((a.relTo[b.id]||0)+delta,-6,10);b.relTo[a.id]=a.relTo[b.id];a.energy=clamp(a.energy-(kind==='wrestle'?8:2));b.energy=clamp(b.energy-(kind==='wrestle'?8:2));
  if(kind==='share'){const id=Object.keys(a.inv).find(k=>quantity(a.inv,k)>0);if(id){add(a.inv,id,-1);add(b.inv,id,1);log(`${a.name} shared ${items[id].name} with ${b.name} at ${WORLD[a.location].name}.`);}}
@@ -1122,8 +1132,8 @@ function worldDrawV3(){const c=ctx,t=animationTime,loc=state.location;if(!state)
  if(loc==='post'){drawTerrain(c,t);drawStall(c);const structures=upgrades.filter(u=>state.upgrades.includes(u.id)&&extraUpgrades.some(e=>e.id===u.id));structures.forEach(u=>{const index=extraUpgrades.findIndex(e=>e.id===u.id);if(amenityPositions[index])drawAmenity(c,u.id,...amenityPositions[index]);});}
  else drawSceneBackground(c,loc,t);
  for(const o of WORLD[loc].objects){if(loc!=='post'||o[3]!=='stall')drawObject(c,o);if(o[3]!=='stall')textTag(c,o[0],o[1],o[2]-45);worldHotspots.push({id:o[3],x:o[1],y:o[2],r:42,kind:'object'});}
- const found=state.npcs.filter(n=>n.location===loc);for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;if(Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
- n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;
+ const found=state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between');for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;if(!n.travelPlan&&!n.physicalIntent&&Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
+ if(!n.travelPlan&&!n.physicalIntent){n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;}
  const x=n.worldPos[0],y=n.worldPos[1];if(n.id===state.chosen){rect(c,x-24,y+29,48,4,'#f0cf75');}bear(c,x,y,1.1,n,t);textTag(c,n.name.toUpperCase(),x,y-40,n.id===state.chosen);worldHotspots.push({id:n.id,x,y,r:38,kind:'npc'});
  }
  if(loc==='den'){bear(c,563,242,1.8,{skin:'#80573d',ear:'#523b2e',scarf:'#cda66d',age:36,activity:'watching'},t);textTag(c,'MAMA',563,185);worldHotspots.push({id:'mama',x:563,y:243,r:61,kind:'mama'});}
@@ -1532,9 +1542,9 @@ function v4MotionFrame(ms){if(!state||v4MenuIsOpen||v4CreatorIsOpen||paused||sta
  if(dx||dy){const length=Math.hypot(dx,dy)||1,spd=(v4Keys.has('shift')?142:98)*dT;dx=dx/length*spd;dy=dy/length*spd;const x=state.playerPos[0],y=state.playerPos[1];if(!v4Blocked(x+dx,y))state.playerPos[0]=clamp(x+dx,32,738);if(!v4Blocked(state.playerPos[0],y+dy))state.playerPos[1]=clamp(y+dy,133,410);playerMoving=true;state.pose='walk';v4MoveEffort+=spd;if(v4MoveEffort>80){v4MoveEffort=0;state.needs.energy=clamp(state.needs.energy-.24);state.phaseActs+=.025;}}else playerMoving=false;
  const nearest=v4Nearest(120);v4PromptTarget=nearest;const hud=$('v4Interact');if(state.options?.help&&nearest){hud.innerHTML=`<strong>[E] ${h(nearest.label)}</strong> · ${Math.round(nearest.d)}px away`;}else hud.innerHTML='<strong>WASD</strong> Walk · <strong>E</strong> Interact · <strong>M</strong> Map';
  if(state.location==='trail')v4UpdateCars(dT);if(state.location==='river')v4CheckWater(dT);
- v4CheckOrphanNeeds(dT);v51Camera();
+ v4CheckOrphanNeeds(dT);v53NpcFrame(dT);v51Camera();
 }
-function v4Nearest(maxDist=130){const ps=state.playerPos,loc=state.location;const entries=[...WORLD[loc].objects.map(o=>({kind:'object',x:o[1],y:o[2],label:o[0],obj:o,id:o[3]})),...state.npcs.filter(n=>n.location===loc).map(n=>({kind:'npc',x:n.worldPos?.[0]||0,y:n.worldPos?.[1]||0,id:n.id,label:'Talk to '+n.name}))];if(loc==='den')entries.push({kind:'mama',x:563,y:242,label:'Talk to Mama'});if(loc==='trail'&&v4TraderHere())entries.push({kind:'trader',x:592,y:308,label:'Speak with wandering trader'});if(loc==='trail'&&state.orphan.status==='found')entries.push({kind:'orphan',x:405,y:320,label:'Help the abandoned newborn'});
+function v4Nearest(maxDist=130){const ps=state.playerPos,loc=state.location;const entries=[...WORLD[loc].objects.map(o=>({kind:'object',x:o[1],y:o[2],label:o[0],obj:o,id:o[3]})),...state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between').map(n=>({kind:'npc',x:n.worldPos?.[0]||0,y:n.worldPos?.[1]||0,id:n.id,label:'Talk to '+n.name}))];if(loc==='den')entries.push({kind:'mama',x:563,y:242,label:'Talk to Mama'});if(loc==='trail'&&v4TraderHere())entries.push({kind:'trader',x:592,y:308,label:'Speak with wandering trader'});if(loc==='trail'&&state.orphan.status==='found')entries.push({kind:'orphan',x:405,y:320,label:'Help the abandoned newborn'});
  return entries.map(o=>({...o,d:Math.hypot(ps[0]-o.x,ps[1]-o.y)})).filter(o=>o.d<maxDist).sort((a,b)=>a.d-b.d)[0]||null;}
 function v4InteractNearest(){if(state.dead||v4MenuIsOpen||mapOpen)return;const n=v4Nearest(105);if(!n){notify('Nothing within reach. Walk closer to an object or cub.');return;}if(n.kind==='object'){interactObject(n.id,{x:n.x,y:n.y,id:n.label});return;}if(n.kind==='npc'){selectNPC(n.id);return;}if(n.kind==='mama'){talkMama('hug');switchTab('mama');return;}if(n.kind==='trader'){v4ShowTrader();return;}if(n.kind==='orphan'){v4OrphanDialogue();return;}}
 // Instead of stepping instantly on click, move toward the clicked point and use spatial actions on arrival.
@@ -1933,6 +1943,108 @@ const v51PreviousItemAction=itemAction;itemAction=function(id,action){
    v51Flight(id,position,target,850);
  }
  return result;
+};
+
+
+/* v5.2 physical NPC travel and action foundations. All movement has persistent
+   state and leaves the current scene through the visible border. */
+function v53AdvanceToward(n,target,dT,speed=83){
+ const p=n.worldPos;const dx=target[0]-p[0],dy=target[1]-p[1],dist=Math.hypot(dx,dy);
+ if(dist<3){p[0]=target[0];p[1]=target[1];return true;}
+ const step=Math.min(dist,speed*dT);
+ p[0]+=dx/dist*step;p[1]+=dy/dist*step;
+ return step>=dist-0.01;
+}
+function v53TransitStep(n,dT){
+ const p=n.travelPlan;
+ if(!p)return;
+ if(p.stage==='leaving'){
+   const waypoint=p.waypoints[0];
+   if(!waypoint){p.stage='between';p.elapsed=0;return;}
+   n.activity='walk';
+   if(v53AdvanceToward(n,waypoint,dT)){p.waypoints.shift();if(p.waypoints.length)n.worldTarget=p.waypoints[0].slice();}
+ }else if(p.stage==='between'){
+   p.elapsed+=dT;
+   // Connected scene graph travel uses real time, even when the cub is off-screen.
+   const hops=Math.max(1,p.path.length-1);
+   if(p.elapsed>=hops*1.6){
+     n.location=p.to;
+     n.worldPos=[719,382];
+     const delta={fern:-96,pebble:90,waffle:-95,juniper:95,sprout:-50,moss:135}[n.id]||0;
+     const goal=origin[p.to]||[345,330];
+     p.waypoints=[[clamp(goal[0]+delta,70,690),clamp(goal[1],190,379)]];
+     p.stage='arriving';
+     n.worldTarget=p.waypoints[0].slice();
+   }
+ }else if(p.stage==='arriving'){
+   n.activity='walk';
+   if(v53AdvanceToward(n,p.waypoints[0],dT)){
+     n.worldTarget=n.worldPos.slice();
+     n.activity='browsing';
+     n.memory.unshift('D'+state.day+': Walked from '+WORLD[p.from].short+' to '+WORLD[p.to].short);
+     n.memory=n.memory.slice(0,16);
+     n.travelPlan=null;
+   }
+ }
+}
+function v53Amenity(n){
+ if(n.location==='den'&&phase()===3)return {kind:'sleep',target:[clamp((n.worldPos?.[0]||350),120,380),350]};
+ const pref=n.activity||'browsing';
+ const mapping={sit:'bench',chat:'bench',comfort:'bench',eat:'firepit',drink:'waterstation',play:'playground',wrestle:'playground',chase:'playground',craft:'workbench',sleep:'nest'};
+ const id=mapping[pref];
+ if(!id)return null;
+ let place=(state.v5Builds||[]).find(a=>a.id===id&&n.location==='post');
+ if(place)return {kind:pref,target:[place.x||place.pos?.[0]||425,place.y||place.pos?.[1]||350]};
+ const o=WORLD[n.location]?.objects?.find(a=>a[3]===id);
+ if(o)return {kind:pref,target:[o[1],o[2]+26]};
+ return null;
+}
+function v53NpcFrame(dT){
+ if(!state?.npcs)return;
+ for(const n of state.npcs){
+   if(!n.worldPos||!WORLD[n.location])continue;
+   if(n.travelPlan){v53TransitStep(n,dT);continue;}
+   const want=v53Amenity(n);
+   if(!want){if(n.physicalIntent)n.physicalIntent=null;continue;}
+   if(!n.physicalIntent||n.physicalIntent.kind!==want.kind||
+      Math.hypot(n.physicalIntent.target[0]-want.target[0],n.physicalIntent.target[1]-want.target[1])>8){
+     n.physicalIntent={kind:want.kind,target:want.target,stage:'approach',once:false};
+   }
+   const intent=n.physicalIntent;
+   if(intent.stage==='approach'){
+     n.worldTarget=intent.target.slice();
+     if(v53AdvanceToward(n,intent.target,dT,67))intent.stage='using';
+   }else if(!intent.once){
+     intent.once=true;
+     if(intent.kind==='sleep')n.energy=clamp((n.energy||70)+7);
+     if(intent.kind==='drink')n.energy=clamp((n.energy||70)+2);
+     if(['play','wrestle','chase'].includes(intent.kind))n.energy=clamp((n.energy||70)-2);
+     // Effects are tied to reaching the object, not clicking a text-only button.
+     n.memory.unshift('D'+state.day+': '+intent.kind+' at '+WORLD[n.location].short);
+     n.memory=n.memory.slice(0,16);
+   }
+ }
+}
+const v53PreviousDraw=drawScene;
+drawScene=function(){
+ v53PreviousDraw();
+ if(!state||mapOpen)return;
+ for(const n of state.npcs){
+   if(n.location!==state.location||n.travelPlan?.stage==='between')continue;
+   const intent=n.physicalIntent;if(!intent||intent.stage!=='using')continue;
+   const [x,y]=n.worldPos;
+   ctx.save();ctx.textAlign='center';ctx.font='bold 10px monospace';
+   if(intent.kind==='eat'||intent.kind==='drink'){
+     ctx.fillStyle='#f3dbac';ctx.fillRect(x+16,y-4,10,8);ctx.fillStyle='#8c5e3b';ctx.fillRect(x+19,y-5,4,4);
+   }else if(intent.kind==='sit'||intent.kind==='chat'){
+     ctx.fillStyle='#ae7b4a';ctx.fillRect(x-24,y+26,48,5);ctx.fillRect(x-18,y+26,5,12);
+   }else if(intent.kind==='sleep'){
+     ctx.fillStyle='#fff4d1';ctx.fillText('z z',x+21,y-28);
+   }else if(['play','wrestle','chase'].includes(intent.kind)){
+     ctx.fillStyle='#fbd28b';ctx.fillText('♥',x+24,y-28);
+   }
+   ctx.restore();
+ }
 };
 
 function v512RestorePreImportBackup(){
