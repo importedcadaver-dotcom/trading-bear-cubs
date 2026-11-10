@@ -22,6 +22,7 @@ jobs:
         run: |
           python tests/reliability_v51.py
           python tests/security_v512.py
+          python tests/historical_save_migrations_v512.py
       - name: Build portable game ZIP and checksums
         run: |
           VERSION="$(cat VERSION)"
