@@ -131,5 +131,51 @@ showDev=function(){
 };
 window.LittleTradingPost={...window.LittleTradingPost,importSave:v512ImportSave,validateSave:v512ValidateSave,
   exportSave:()=>JSON.stringify(state),restoreBackup:v512RestorePreImportBackup,backupSaveKey:V512_BACKUP};
+
+/* v5.2.2: Accessible scene controls and modal keyboard focus. */
+world.tabIndex=0;
+world.setAttribute('role','img');
+world.setAttribute('aria-label','Playable woodland scene. Use W A S D or arrow keys to move; E to interact, M for map, I for inventory.');
+world.setAttribute('aria-keyshortcuts','W A S D E M I');
+const v522OriginalOpenModal=openModal;
+const v522OriginalCloseModal=closeModal;
+let v522LastFocus=null;
+openModal=function(...args){
+ const wasOpen=$('modalBackdrop').classList.contains('open');
+ if(!wasOpen)v522LastFocus=document.activeElement;
+ v522OriginalOpenModal(...args);
+ const modal=$('modal');
+ modal.setAttribute('aria-modal','true');
+ modal.setAttribute('role','dialog');
+ queueMicrotask(()=>{
+  if(!$('modalBackdrop').classList.contains('open'))return;
+  const first=modal.querySelector('input:not([type=hidden]),select,textarea,button:not([disabled])');
+  (first||modal).focus();
+ });
+};
+closeModal=function(){
+ v522OriginalCloseModal();
+ if(v522LastFocus?.isConnected&&typeof v522LastFocus.focus==='function')v522LastFocus.focus();
+ v522LastFocus=null;
+};
+$('modal').tabIndex=-1;
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Tab'||!$('modalBackdrop').classList.contains('open'))return;
+ const options=[...$('modal').querySelectorAll('button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])')].filter(x=>x.getClientRects().length);
+ if(!options.length){e.preventDefault();$('modal').focus();return;}
+ const first=options[0],last=options.at(-1);
+ if(e.shiftKey&&(document.activeElement===first||!$('modal').contains(document.activeElement))){
+  e.preventDefault();last.focus();
+ }else if(!e.shiftKey&&(document.activeElement===last||!$('modal').contains(document.activeElement))){
+  e.preventDefault();first.focus();
+ }
+});
+const v522PreviousRender=render;
+render=function(){
+ v522PreviousRender();
+ if(state?.location&&WORLD[state.location])world.setAttribute('aria-label',
+   'Woodland scene: '+WORLD[state.location].name+'. Use W A S D to move, E to interact, M to open the map, and I for inventory.');
+};
+
 load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
 })();
