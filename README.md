@@ -36,6 +36,17 @@ GitHub Pages is enabled and the [deployment workflow](.github/workflows/deploy-p
 | [`archives/`](archives/) | Previously committed reconstructed ZIP snapshots; new generated archives and screenshots are provided as downloadable [Actions run artifacts](../../actions/workflows/build-downloads.yml), not pushed into protected `main` |
 
 
+## Maintained source and offline build (v5.2.1)
+
+The deployed `index.html` is a **generated standalone HTML build** and still works without installing anything. Edit the smaller files in [`src/runtime/layers/`](src/runtime/layers/) and [`src/lib/barter-rules.mjs`](src/lib/barter-rules.mjs), then run:
+
+```bash
+python scripts/build_standalone.py
+python scripts/build_standalone.py --check
+```
+
+GitHub Actions refuses to deploy if the generated HTML doesn't match its source. Vitest and the actual game now share the authoritative `isNullBarter` rule. The runtime still has a single legacy closure split into source layers; deeper modularization remains a tracked task.
+
 ## Development and automated QA
 
 The HTML needs no runtime dependencies. Optional development tools:
