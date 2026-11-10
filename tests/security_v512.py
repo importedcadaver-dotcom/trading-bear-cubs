@@ -107,7 +107,7 @@ with sync_playwright() as p:
         cap["npcs"][0]["worldPos"]=[359,330]
         cap["npcs"][0]["worldTarget"]=[359,330]
         sentimental=cap["npcs"][0]["love"]
-        cap["npcs"][0]["inv"][sentimental]=1
+        cap["npcs"][0]["inv"][sentimental]=2
         cap["npcs"][0]["sentimental"]=sentimental
         cap["npcs"][0]["cravings"]["nic"]=96
         cap["npcs"][0]["dependency"]["nic"]=70
@@ -119,6 +119,7 @@ with sync_playwright() as p:
         offer_name = page.evaluate("window.LittleTradingPost.items.vape_berry.short")
         take_name = page.evaluate("(id) => window.LittleTradingPost.items[id].short",sentimental)
         page.locator("#yourTrade button.goods").filter(has_text=offer_name).first.click()
+        page.locator("#theirTrade button.goods").filter(has_text=take_name).first.click()
         page.locator("#theirTrade button.goods").filter(has_text=take_name).first.click()
         initial=state()
         page.locator("#tradeBtn").click()
@@ -135,8 +136,8 @@ with sync_playwright() as p:
         backup = page.evaluate("localStorage.getItem(window.LittleTradingPost.backupSaveKey)")
         check(bool(backup),"Successful imports create a recoverable backup")
         page.evaluate("window.LittleTradingPost.restoreBackup()")
-        check(state()["inv"] != initial["inv"] or state()["trades"] == initial["trades"],
-              "Backup restore returns a valid game state")
+        check(state()["inv"] == __import__("json").loads(backup)["inv"],
+              "Backup restore exactly recovers prior item quantities")
 
         # Save failures must be surfaced to the player rather than swallowed.
         result=page.evaluate("""() => {
