@@ -122,7 +122,7 @@ with sync_playwright() as p:
               "Cancelled transfer never duplicates or loses items")
 
         # Obstacle navigation uses real map colliders from whichever location
-        the actors are in, independent of the player's current scene.
+        # the actors are in, independent of the player's current scene.
         sample=copy.deepcopy(state())
         for n in sample["npcs"]:
             if n["id"]=="fern":n["location"]="den";n["worldPos"]=[360,290];n["worldTarget"]=[360,290];n["travelPlan"]=None;n["meetPlan"]=None;n["navSteps"]=[]
