@@ -77,5 +77,5 @@ jobs:
         run: |
           echo "### Downloadable game assets" >> "$GITHUB_STEP_SUMMARY"
           echo "ZIPs, screenshots and extracted JavaScript are attached to this workflow run as **trading-post-build-${{ github.run_id }}**." >> "$GITHUB_STEP_SUMMARY"
-          echo "No generated files are pushed to protected `main`." >> "$GITHUB_STEP_SUMMARY"
+          echo "No generated files are pushed to the protected main branch." >> "$GITHUB_STEP_SUMMARY"
           echo "For permanent versioned downloads use [GitHub Releases](https://github.com/${{ github.repository }}/releases)." >> "$GITHUB_STEP_SUMMARY"
