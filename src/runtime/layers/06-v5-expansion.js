@@ -108,6 +108,12 @@ function v5Reason(n){if(n.location!==state.location)return `${n.name} isn't in t
  if(n.rel<-3)return `“I don't trust you after what happened before.”`;if(list.some(id=>n.reservedInv?.[id]))return `“I promised that to someone else.”`;if(list.some(id=>!quantity(n.inv,id)))return `“I don't carry that with me.”`;if(Object.keys(offered).some(id=>quantity(n.inv,id)>1))return `“I already have lots of that.”`;return `“I don't like this deal enough to part with my treasures.”`;}
 const v5OldNegotiate=negotiate;negotiate=function(){const n=npc();
  if(state.dead||!v5NearCub(n))return notify('You must stand near this cub to barter.');
+ if(wanted.fernMouse){
+   const answer=v54MouseReply(n);
+   tradeResult(n.name+': “'+answer+'”',false);
+   say(n.id,answer);
+   return;
+ }
 
  const isNull=SharedBarterRules.isNullBarter(offered,wanted);
  if(isNull){

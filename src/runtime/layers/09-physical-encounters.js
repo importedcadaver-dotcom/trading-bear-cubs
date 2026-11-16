@@ -111,12 +111,19 @@ function v54CancelMeeting(a,b,why='interrupted'){
 function v54FinishMeeting(a,b,plan){
  if(plan.kind==='trade'){
    const x=plan.give,y=plan.take;
+   const mouse=state.treasureHistory?.fernMouse;
+   const mouseTrade=x==='fernMouse'&&a.id==='fern'&&b.id==='pebble'&&
+     a.location==='post'&&mouse?.stage==='offered'&&mouse.currentOwner===a.id&&a.reservedInv?.[x]===1;
    if(!items[x]||!items[y]||x===y||!quantity(a.inv,x)||!quantity(b.inv,y)||
-     a.reservedInv?.[x]||b.reservedInv?.[y]){
+     (a.reservedInv?.[x]&&!mouseTrade)||b.reservedInv?.[y]||
+     (x==='fernMouse'&&!mouseTrade)||y==='fernMouse'){
      v54CancelMeeting(a,b,'postponed when goods changed');return;
    }
    if(a.location==='post'&&(!entry(a)||!entry(b))){
      v54CancelMeeting(a,b,'blocked by trading-post permissions');return;
+   }
+   if(!quantity(a.inv,x)||!quantity(b.inv,y)){
+     v54CancelMeeting(a,b,'postponed after paying the market fee');return;
    }
    add(a.inv,x,-1);add(b.inv,y,-1);add(a.inv,y,1);add(b.inv,x,1);
    a.deals++;b.deals++;
@@ -124,13 +131,31 @@ function v54FinishMeeting(a,b,plan){
    v51Flight(y,b.worldPos,a.worldPos,1080);
    log(a.name+' exchanged '+items[x].name+' with '+b.name+' for '+items[y].name+
        ' face-to-face at '+WORLD[a.location].name+'.');
+   if(mouseTrade){
+     delete a.reservedInv[x];
+     b.reservedInv[x]=1;
+     Object.assign(mouse,{stage:'traded',formerOwner:a.id,currentOwner:b.id,day:state.day});
+     say(b.id,'I’ll keep your ribbon mouse safe, Fern.');
+     log('Ribbon mouse trade: Fern passed her den keepsake to Pebble in exchange for '+items[y].name.toLowerCase()+'.');
+     notify('Pebble now has Fern’s ribbon mouse. Ask Fern about it tomorrow.');
+     if(npc().id===a.id&&wanted[x]){
+       clearSelectionsOnly();
+       tradeResult('Fern already traded the ribbon mouse to Pebble.',false);
+     }
+   }
  }else{
    const kind=plan.kind,delta=kind==='argue'?-1:1;
    a.relTo[b.id]=clamp((a.relTo[b.id]||0)+delta,-6,10);
    b.relTo[a.id]=clamp((b.relTo[a.id]||0)+delta,-6,10);
    if(kind==='share'){
-     const gift=Object.keys(a.inv).find(id=>quantity(a.inv,id)>0);
-     if(gift){add(a.inv,gift,-1);add(b.inv,gift,1);v51Flight(gift,a.worldPos,b.worldPos,1000);}
+     const gift=Object.keys(a.inv).find(id=>quantity(a.inv,id)>0&&!a.reservedInv?.[id]&&id!=='fernMouse');
+     if(!gift){
+       v54CancelMeeting(a,b,'declined');
+       say(a.id,'I’m keeping what I brought with me today.');
+       save();
+       return;
+     }
+     add(a.inv,gift,-1);add(b.inv,gift,1);v51Flight(gift,a.worldPos,b.worldPos,1000);
    }else if(kind==='gather'&&count(a.inv)<12){
      const id=randomOf(['berry','stick','leaf','twig']);add(a.inv,id,1);
    }
@@ -141,10 +166,13 @@ function v54FinishMeeting(a,b,plan){
  }
  for(const [n,other] of [[a,b],[b,a]]){
    n.memory=Array.isArray(n.memory)?n.memory:[];
-   n.memory.unshift('D'+state.day+': Finished '+plan.kind+' face-to-face with '+other.name);
+   n.memory.unshift('D'+state.day+': Finished '+plan.kind+' face-to-face with '+other.name+
+     (plan.give==='fernMouse'?' (Fern’s ribbon mouse went to Pebble)':''));
    n.memory=n.memory.slice(0,16);
    n.meetPlan=null;n.activity='browsing';n.navSteps=[];n.navGoal=null;
  }
+ save();
+ render();
 }
 function v54FrameMeetings(dT){
  // Never let array order suppress the lead of a pair whose partner happens
@@ -180,6 +208,7 @@ function v54FrameMeetings(dT){
 const v54PrevFrame=v53NpcFrame;
 v53NpcFrame=function(dT){
  if(!state?.npcs)return;
+ v54QueueMouseTrade(dT);
  v54FrameMeetings(dT);
  // Keep the old furniture loop from dragging a wrestler away mid-scene.
  const busy=state.npcs.filter(n=>n.meetPlan&&!n.travelPlan);
@@ -187,6 +216,70 @@ v53NpcFrame=function(dT){
  for(const n of busy)n.activity='walk';
  v54PrevFrame(dT);
  busy.forEach((n,i)=>{if(n.meetPlan)n.activity=previous[i];});
+};
+
+function v54MouseVisitsPost(id){
+ const stage=state.treasureHistory?.fernMouse?.stage;
+ return (id==='fern'&&(stage==='keeping'||stage==='offered'))||
+   (id==='pebble'&&stage==='offered');
+}
+function v54MouseReply(n){
+ const mouse=state.treasureHistory.fernMouse;
+ if(n.id==='pebble')return 'I’m keeping Fern’s ribbon mouse safe.';
+ if(mouse?.stage==='traded'){
+   return state.day>mouse.day?'Pebble has my old ribbon mouse. He promised to tuck it beside him at night.':
+     'Pebble has it now. I liked knowing he would take care of it.';
+ }
+ if(!mouse){
+   add(n.inv,'fernMouse',1);
+   n.reservedInv.fernMouse=1;
+   state.treasureHistory.fernMouse={stage:'keeping',currentOwner:'fern',context:'Fern’s den keepsake'};
+   if(phase()!==3)scheduleV3();
+   log('Fern tucked her blue-ribbon mouse under her arm and planned a visit to the trading post.');
+   save();
+   return 'Mama used to tuck this mouse beside me. I’m keeping it close. Come see me at the post.';
+ }
+ if(n.location==='post'&&mouse.stage==='keeping'){
+   Object.assign(mouse,{stage:'offered',wait:9});
+   scheduleV3();
+   log('Fern turned down an offer for her ribbon mouse. She wants to ask Pebble if he would keep it close at bedtime.');
+   save();
+   return 'No, I still remember Mama tucking it beside me. Maybe I’d trade with Pebble if he promised to keep it close.';
+ }
+ return 'I’m keeping it close until I can talk to Pebble about taking care of it.';
+}
+function v54QueueMouseTrade(dT){
+ const mouse=state.treasureHistory?.fernMouse;
+ if(mouse?.stage!=='offered'||phase()===3)return;
+ const a=state.npcs.find(n=>n.id==='fern'),b=state.npcs.find(n=>n.id==='pebble');
+ if(a.location!=='post'||b.location!=='post'||a.travelPlan||b.travelPlan||
+    a.meetPlan||b.meetPlan||!quantity(a.inv,'fernMouse')||a.reservedInv.fernMouse!==1)return;
+ mouse.wait=Math.max(0,(mouse.wait??9)-dT);
+ if(mouse.wait>0)return;
+ const payment=['shell','stone',...Object.keys(b.inv)].find(id=>
+   id!=='fernMouse'&&quantity(b.inv,id)>0&&!b.reservedInv?.[id]);
+ if(payment&&v54StartMeeting(a,b,'trade',{give:'fernMouse',take:payment})){
+   mouse.wait=9;
+   say(a.id,'Pebble, would you trade for my mouse if you promise to keep it close?');
+   if(state.location==='post')notify('Fern is offering her ribbon mouse to Pebble.');
+ }
+}
+
+const v54PriorConversation=v5OpenConversation;
+v5OpenConversation=function(n){
+ v54PriorConversation(n);
+ if(n.id!=='fern'||!v5NearCub(n))return;
+ const option=document.createElement('button');
+ option.className='v5Choice';
+ option.id='fernMouseStory';
+ option.textContent='Ask Fern about her ribbon mouse';
+ document.querySelector('#v5AskItem')?.after(option);
+ option.onclick=()=>{
+   if(!v5NearCub(n)||n.travelPlan?.stage==='between')return;
+   const answer=v54MouseReply(n);
+   say(n.id,answer);
+   openModal('Fern’s ribbon mouse','<p>“'+h(answer)+'”</p>',[{text:'BACK',action:closeModal}]);
+ };
 };
 bumpSocial=function(){
  const pairs=[];
@@ -205,8 +298,8 @@ npcTrade=function(){
  for(const a of state.npcs)for(const b of state.npcs){
    if(a.id>=b.id||a.location!==b.location||a.travelPlan||b.travelPlan||
      a.meetPlan||b.meetPlan)continue;
-   for(const x of Object.keys(a.inv).filter(id=>quantity(a.inv,id)>0&&!a.reservedInv?.[id])){
-     for(const y of Object.keys(b.inv).filter(id=>quantity(b.inv,id)>0&&!b.reservedInv?.[id]&&id!==x)){
+   for(const x of Object.keys(a.inv).filter(id=>id!=='fernMouse'&&quantity(a.inv,id)>0&&!a.reservedInv?.[id])){
+     for(const y of Object.keys(b.inv).filter(id=>id!=='fernMouse'&&quantity(b.inv,id)>0&&!b.reservedInv?.[id]&&id!==x)){
        const gainA=itemVal(a,y)-itemVal(a,x);
        const gainB=itemVal(b,x)-itemVal(b,y);
        if(gainA>=-1&&gainB>=-1&&gainA+gainB>=2){
@@ -228,6 +321,19 @@ const v54PrevDraw=drawScene;
 drawScene=function(){
  v54PrevDraw();
  if(!state||mapOpen)return;
+ const mouse=state.treasureHistory?.fernMouse;
+ if(mouse){
+   const holder=state.npcs.find(n=>n.id===mouse.currentOwner);
+   if(holder?.location===state.location&&holder.travelPlan?.stage!=='between'&&quantity(holder.inv,'fernMouse')){
+     const [x,y]=holder.worldPos;
+     ctx.drawImage(v51ItemCanvas('fernMouse'),x+12,y-17,26,26);
+     if(mouse.stage==='traded'&&mouse.day===state.day&&state.location==='post'){
+       ctx.save();ctx.font='bold 11px monospace';ctx.fillStyle='#fff3ce';
+       ctx.fillText('Fern’s ribbon mouse',x+18,y+23);
+       ctx.restore();
+     }
+   }
+ }
  for(const a of state.npcs){
    const p=a.meetPlan;if(!p||p.stage!=='perform'||a.location!==state.location)continue;
    if(p.role!=='lead')continue;
