@@ -79,6 +79,10 @@ def click_cub(page, name):
         return n.location === s.location && !n.travelPlan;
     }""", arg=name)
     x, y = cub(state(page), name)["worldPos"]
+    click_world(page, x, y)
+
+
+def click_world(page, x, y):
     world = page.locator("#world")
     world.scroll_into_view_if_needed()
     box = world.bounding_box()
@@ -92,7 +96,7 @@ def travel(page, location):
     page.locator(f'[data-route="{location}"]').click()
 
 
-def story(page):
+def offer_mouse(page):
     click_cub(page, "fern")
     page.locator("#fernMouseStory").click()
     expect(page.locator("#modalBody")).to_contain_text("Mama used to tuck this mouse")
@@ -116,6 +120,22 @@ def story(page):
     assert refused["treasureHistory"]["fernMouse"]["stage"] == "offered"
     assert "formerOwner" not in refused["treasureHistory"]["fernMouse"]
     page.screenshot(path=OUT / "02-fern-refuses.png")
+
+
+def finish_pebble_objective(page):
+    click_world(page, 563, 242)
+    expect(page.locator("#modalTitle")).to_contain_text("MAMA BROWN BEAR")
+    page.get_by_role("button", name="BACK TO THE DEN").click()
+    click_world(page, 217, 273)
+    page.wait_for_function("LittleTradingPost.getState().tutorial.step === 2")
+    click_cub(page, "pebble")
+    page.wait_for_function("LittleTradingPost.getState().tutorial.step === 3")
+    page.get_by_role("button", name="SAY GOODBYE").click()
+
+
+def story(page):
+    finish_pebble_objective(page)
+    offer_mouse(page)
     page.wait_for_function("""() => {
       const fern = LittleTradingPost.getState().npcs.find(n => n.id === 'fern');
       return fern.meetPlan?.give === 'fernMouse';
@@ -167,6 +187,39 @@ def story(page):
     print("PASS: interrupted mouse trade preserves both ownership and history", flush=True)
 
 
+def early_story(page):
+    offer_mouse(page)
+    before = state(page)
+    assert before["tutorial"]["step"] == 0
+    assert cub(before, "pebble")["location"] == "den"
+    assert not cub(before, "pebble")["travelPlan"]
+    page.reload()
+    page.locator("#v5Continue").click()
+    reloaded = state(page)
+    assert reloaded["treasureHistory"]["fernMouse"] == before["treasureHistory"]["fernMouse"]
+    assert cub(reloaded, "fern")["reservedInv"]["fernMouse"] == 1
+    travel(page, "den")
+    finish_pebble_objective(page)
+    released = state(page)
+    assert released["treasureHistory"]["fernMouse"]["stage"] == "offered"
+    assert cub(released, "pebble")["travelPlan"]["to"] == "post"
+    page.screenshot(path=OUT / "06-tutorial-resumes.png")
+    travel(page, "post")
+    page.wait_for_function(
+        "LittleTradingPost.getState().treasureHistory.fernMouse.stage === 'traded'",
+        timeout=45000,
+    )
+    page.reload()
+    page.locator("#v5Continue").click()
+    result = state(page)
+    assert result["tutorial"]["step"] == 3
+    assert not cub(result, "fern")["inv"].get("fernMouse")
+    assert cub(result, "pebble")["inv"]["fernMouse"] == 1
+    assert result["treasureHistory"]["fernMouse"]["currentOwner"] == "pebble"
+    assert sum(entry["text"].startswith("Ribbon mouse trade:") for entry in result["history"]) == 1
+    print("PASS: early mouse story survives reload, tutorial resumes, trade completes exactly once", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--chrome", action="store_true")
@@ -177,7 +230,7 @@ def main():
         cleanup.callback(server.shutdown)
         url = f"http://127.0.0.1:{server.server_port}/"
         browser = p.chromium.launch(channel="chrome" if args.chrome else None)
-        for name, exercise in (("gifts", gift_cases), ("story", story)):
+        for name, exercise in (("gifts", gift_cases), ("story", story), ("early-story", early_story)):
             context = browser.new_context(viewport={"width":1440, "height":900})
             context.tracing.start(screenshots=True, snapshots=True)
             page = context.new_page()
