@@ -10,6 +10,7 @@ const items = {
  button:{name:'Old button',short:'button',plural:'Buttons',color:'#e4b55e',desc:'A human button, round and shiny.'},
  acorn:{name:'Acorn cap',short:'acorn',plural:'Acorn caps',color:'#916641',desc:'A tiny helmet or a tiny bowl.'},
  mouse:{name:'Toy mouse',short:'mouse',plural:'Toy mice',color:'#bd938e',desc:'Handmade, with very floppy ears.'},
+ fernMouse:{name:"Fern's ribbon mouse",short:'ribbon mouse',plural:'Ribbon mice',color:'#bd938e',desc:'A floppy toy mouse with a blue ribbon. Fern used to tuck it beside her in the den.'},
  shell:{name:'River shell',short:'shell',plural:'River shells',color:'#e0b6a5',desc:'A polished shell with a pink center.'},
  ribbon:{name:'Red ribbon',short:'ribbon',plural:'Ribbons',color:'#c46b61',desc:'A bright ribbon fallen from a picnic.'},
  key:{name:'Human key',short:'key',plural:'Human keys',color:'#ab9b66',desc:'A mysterious human thing. Opens nothing here.'},
@@ -121,7 +122,8 @@ function drawItem(canvas,id){const c=canvas.getContext('2d');c.clearRect(0,0,24,
  case'stone':p(8,4,7,3,'#8bafe1');p(5,7,13,3,'#7396d3');p(4,10,16,7,'#597ab5');p(7,17,11,3,'#4d6a9d');p(8,7,4,3,'#bbd7ed');dot(6,11,'#91b8e5');break;
  case'button':p(7,4,10,2,'#bd8b39');p(5,6,14,12,'#cfa65a');p(7,18,10,2,'#9e7c3d');p(8,7,8,9,'#f5cf80');dot(8,9,'#926b3a');dot(14,9,'#926b3a');dot(8,14,'#926b3a');dot(14,14,'#926b3a');break;
  case'acorn':p(9,5,6,3,'#785035');p(6,8,12,5,'#805737');p(7,13,10,6,'#ab8050');p(9,19,6,2,'#6f4c38');p(8,9,2,2,'#c09b60');p(13,9,2,2,'#c09b60');break;
- case'mouse':p(4,7,6,6,'#ad817e');p(13,7,6,6,'#ad817e');p(7,10,11,9,'#ae9185');p(9,12,9,7,'#d8b3a7');dot(10,14,'#3c4442');dot(16,14,'#3c4442');p(13,17,2,2,'#c3697f');p(19,17,3,1,'#ad817e');break;
+ case'fernMouse':
+ case'mouse':p(4,7,6,6,'#ad817e');p(13,7,6,6,'#ad817e');p(7,10,11,9,'#ae9185');p(9,12,9,7,'#d8b3a7');dot(10,14,'#3c4442');dot(16,14,'#3c4442');p(13,17,2,2,'#c3697f');p(19,17,3,1,'#ad817e');if(id==='fernMouse'){p(6,11,4,3,'#4879b8');p(7,13,2,3,'#4879b8');}break;
  case'shell':p(8,5,8,3,'#d9a391');p(6,8,12,3,'#f0c8ae');p(5,11,14,7,'#ddaf9e');p(7,18,10,2,'#bd8b87');p(10,9,2,8,'#c38c84');p(15,9,2,7,'#f9d6c2');break;
  case'ribbon':p(6,6,6,6,'#b04f54');p(13,6,6,6,'#b04f54');p(10,9,5,5,'#e58b81');p(9,14,4,7,'#b95359');p(14,14,4,7,'#c66b66');p(10,10,4,3,'#f0a59b');break;
  case'vape':p(7,4,7,5,'#788b8c');p(7,9,9,11,'#9f9cab');p(9,12,5,5,'#c7bdbe');p(7,20,9,2,'#6e7280');p(9,2,3,3,'#555b60');break;

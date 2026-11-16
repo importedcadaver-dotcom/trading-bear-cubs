@@ -65,6 +65,7 @@ function scheduleV3(){
      if(n.id==='pebble'&&state.tutorial.step<=2)desired='den';
      if(n.id==='fern'&&state.tutorial.step>=7)desired='post';
    }
+   if(phase()!==3&&v54MouseVisitsPost(n.id))desired='post';
    if(!WORLD[desired])continue;
    if(n.travelPlan){n.travelPlan.nextDesired=desired;continue;}
    if(n.location===desired)continue;
@@ -110,7 +111,7 @@ itemAction=function(id,action){if(state.dead)return notify('This cub cannot act 
  if(action==='store'&&state.location!=='post')return notify('Your lockable storage is at your own trading post. Hide this here or travel back.');
  return originalUseV3(id,action);};
 function talkAction(what){if(state.dead)return notify('This cub cannot act.');const n=npc();if(n.location!==state.location){say('you',`${n.name} isn't here. The map shows where to go.`);return;}
- const sib=['pebble','fern'].includes(n.id),secret=Object.keys(n.hiddenInv).find(k=>n.hiddenInv[k]>0),visible=Object.keys(n.inv).find(k=>n.inv[k]>0),courage={sprout:2,fern:3,pebble:6,waffle:4,juniper:7,moss:8}[n.id];let response='';
+ const sib=['pebble','fern'].includes(n.id),secret=Object.keys(n.hiddenInv).find(k=>n.hiddenInv[k]>0),visible=Object.keys(n.inv).find(k=>k!=='fernMouse'&&n.inv[k]>0),courage={sprout:2,fern:3,pebble:6,waffle:4,juniper:7,moss:8}[n.id];let response='';
  if(what==='chat'){response=sib?`We're littermates, you know! ${n.id==='pebble'?'You still owe me a wrestling rematch.':'Remember when Mama kept us warm?'}`:`I was ${n.activity} earlier. This forest is busy!`;n.rel=clamp(n.rel+0.25,-6,10);}
  if(what==='ask'){response=secret?(n.rel>7&&rng()<.35?`I secretly found ${items[secret].name}. Please keep it quiet!`:"I don't have any special treasures. Promise."):(visible?`I have ${items[visible].name}, yes. But it's mine.`:'I have nothing worth showing.');if(secret&&response.includes(items[secret].name))state.knownSecrets[n.id]=secret;}
  if(what==='persuade'){const chance=0.36+n.rel*.035+(sib?.13:0);if(rng()<chance&&visible){const good=visible;const cost=quantity(state.inv,'berry')>0?'berry':null;if(cost&&count(state.inv)<capacity()){add(state.inv,cost,-1);add(n.inv,cost,1);add(n.inv,good,-1);add(state.inv,good,1);response=`Okay. I'll exchange ${items[good].name} for a berry. Don't tell everyone!`;n.rel=clamp(n.rel+1,-6,10);}else response='Bring something to offer. Even siblings should trade fairly.';}else response="No, I really don't want to. Please respect that.";}

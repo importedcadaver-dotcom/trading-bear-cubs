@@ -137,6 +137,7 @@ const items = {
  button:{name:'Old button',short:'button',plural:'Buttons',color:'#e4b55e',desc:'A human button, round and shiny.'},
  acorn:{name:'Acorn cap',short:'acorn',plural:'Acorn caps',color:'#916641',desc:'A tiny helmet or a tiny bowl.'},
  mouse:{name:'Toy mouse',short:'mouse',plural:'Toy mice',color:'#bd938e',desc:'Handmade, with very floppy ears.'},
+ fernMouse:{name:"Fern's ribbon mouse",short:'ribbon mouse',plural:'Ribbon mice',color:'#bd938e',desc:'A floppy toy mouse with a blue ribbon. Fern used to tuck it beside her in the den.'},
  shell:{name:'River shell',short:'shell',plural:'River shells',color:'#e0b6a5',desc:'A polished shell with a pink center.'},
  ribbon:{name:'Red ribbon',short:'ribbon',plural:'Ribbons',color:'#c46b61',desc:'A bright ribbon fallen from a picnic.'},
  key:{name:'Human key',short:'key',plural:'Human keys',color:'#ab9b66',desc:'A mysterious human thing. Opens nothing here.'},
@@ -248,7 +249,8 @@ function drawItem(canvas,id){const c=canvas.getContext('2d');c.clearRect(0,0,24,
  case'stone':p(8,4,7,3,'#8bafe1');p(5,7,13,3,'#7396d3');p(4,10,16,7,'#597ab5');p(7,17,11,3,'#4d6a9d');p(8,7,4,3,'#bbd7ed');dot(6,11,'#91b8e5');break;
  case'button':p(7,4,10,2,'#bd8b39');p(5,6,14,12,'#cfa65a');p(7,18,10,2,'#9e7c3d');p(8,7,8,9,'#f5cf80');dot(8,9,'#926b3a');dot(14,9,'#926b3a');dot(8,14,'#926b3a');dot(14,14,'#926b3a');break;
  case'acorn':p(9,5,6,3,'#785035');p(6,8,12,5,'#805737');p(7,13,10,6,'#ab8050');p(9,19,6,2,'#6f4c38');p(8,9,2,2,'#c09b60');p(13,9,2,2,'#c09b60');break;
- case'mouse':p(4,7,6,6,'#ad817e');p(13,7,6,6,'#ad817e');p(7,10,11,9,'#ae9185');p(9,12,9,7,'#d8b3a7');dot(10,14,'#3c4442');dot(16,14,'#3c4442');p(13,17,2,2,'#c3697f');p(19,17,3,1,'#ad817e');break;
+ case'fernMouse':
+ case'mouse':p(4,7,6,6,'#ad817e');p(13,7,6,6,'#ad817e');p(7,10,11,9,'#ae9185');p(9,12,9,7,'#d8b3a7');dot(10,14,'#3c4442');dot(16,14,'#3c4442');p(13,17,2,2,'#c3697f');p(19,17,3,1,'#ad817e');if(id==='fernMouse'){p(6,11,4,3,'#4879b8');p(7,13,2,3,'#4879b8');}break;
  case'shell':p(8,5,8,3,'#d9a391');p(6,8,12,3,'#f0c8ae');p(5,11,14,7,'#ddaf9e');p(7,18,10,2,'#bd8b87');p(10,9,2,8,'#c38c84');p(15,9,2,7,'#f9d6c2');break;
  case'ribbon':p(6,6,6,6,'#b04f54');p(13,6,6,6,'#b04f54');p(10,9,5,5,'#e58b81');p(9,14,4,7,'#b95359');p(14,14,4,7,'#c66b66');p(10,10,4,3,'#f0a59b');break;
  case'vape':p(7,4,7,5,'#788b8c');p(7,9,9,11,'#9f9cab');p(9,12,5,5,'#c7bdbe');p(7,20,9,2,'#6e7280');p(9,2,3,3,'#555b60');break;
@@ -1038,6 +1040,7 @@ function scheduleV3(){
      if(n.id==='pebble'&&state.tutorial.step<=2)desired='den';
      if(n.id==='fern'&&state.tutorial.step>=7)desired='post';
    }
+   if(phase()!==3&&v54MouseVisitsPost(n.id))desired='post';
    if(!WORLD[desired])continue;
    if(n.travelPlan){n.travelPlan.nextDesired=desired;continue;}
    if(n.location===desired)continue;
@@ -1083,7 +1086,7 @@ itemAction=function(id,action){if(state.dead)return notify('This cub cannot act 
  if(action==='store'&&state.location!=='post')return notify('Your lockable storage is at your own trading post. Hide this here or travel back.');
  return originalUseV3(id,action);};
 function talkAction(what){if(state.dead)return notify('This cub cannot act.');const n=npc();if(n.location!==state.location){say('you',`${n.name} isn't here. The map shows where to go.`);return;}
- const sib=['pebble','fern'].includes(n.id),secret=Object.keys(n.hiddenInv).find(k=>n.hiddenInv[k]>0),visible=Object.keys(n.inv).find(k=>n.inv[k]>0),courage={sprout:2,fern:3,pebble:6,waffle:4,juniper:7,moss:8}[n.id];let response='';
+ const sib=['pebble','fern'].includes(n.id),secret=Object.keys(n.hiddenInv).find(k=>n.hiddenInv[k]>0),visible=Object.keys(n.inv).find(k=>k!=='fernMouse'&&n.inv[k]>0),courage={sprout:2,fern:3,pebble:6,waffle:4,juniper:7,moss:8}[n.id];let response='';
  if(what==='chat'){response=sib?`We're littermates, you know! ${n.id==='pebble'?'You still owe me a wrestling rematch.':'Remember when Mama kept us warm?'}`:`I was ${n.activity} earlier. This forest is busy!`;n.rel=clamp(n.rel+0.25,-6,10);}
  if(what==='ask'){response=secret?(n.rel>7&&rng()<.35?`I secretly found ${items[secret].name}. Please keep it quiet!`:"I don't have any special treasures. Promise."):(visible?`I have ${items[visible].name}, yes. But it's mine.`:'I have nothing worth showing.');if(secret&&response.includes(items[secret].name))state.knownSecrets[n.id]=secret;}
  if(what==='persuade'){const chance=0.36+n.rel*.035+(sib?.13:0);if(rng()<chance&&visible){const good=visible;const cost=quantity(state.inv,'berry')>0?'berry':null;if(cost&&count(state.inv)<capacity()){add(state.inv,cost,-1);add(n.inv,cost,1);add(n.inv,good,-1);add(state.inv,good,1);response=`Okay. I'll exchange ${items[good].name} for a berry. Don't tell everyone!`;n.rel=clamp(n.rel+1,-6,10);}else response='Bring something to offer. Even siblings should trade fairly.';}else response="No, I really don't want to. Please respect that.";}
@@ -1779,6 +1782,12 @@ function v5Reason(n){if(n.location!==state.location)return `${n.name} isn't in t
  if(n.rel<-3)return `“I don't trust you after what happened before.”`;if(list.some(id=>n.reservedInv?.[id]))return `“I promised that to someone else.”`;if(list.some(id=>!quantity(n.inv,id)))return `“I don't carry that with me.”`;if(Object.keys(offered).some(id=>quantity(n.inv,id)>1))return `“I already have lots of that.”`;return `“I don't like this deal enough to part with my treasures.”`;}
 const v5OldNegotiate=negotiate;negotiate=function(){const n=npc();
  if(state.dead||!v5NearCub(n))return notify('You must stand near this cub to barter.');
+ if(wanted.fernMouse){
+   const answer=v54MouseReply(n);
+   tradeResult(n.name+': “'+answer+'”',false);
+   say(n.id,answer);
+   return;
+ }
 
  const isNull=SharedBarterRules.isNullBarter(offered,wanted);
  if(isNull){
@@ -2246,12 +2255,19 @@ function v54CancelMeeting(a,b,why='interrupted'){
 function v54FinishMeeting(a,b,plan){
  if(plan.kind==='trade'){
    const x=plan.give,y=plan.take;
+   const mouse=state.treasureHistory?.fernMouse;
+   const mouseTrade=x==='fernMouse'&&a.id==='fern'&&b.id==='pebble'&&
+     a.location==='post'&&mouse?.stage==='offered'&&mouse.currentOwner===a.id&&a.reservedInv?.[x]===1;
    if(!items[x]||!items[y]||x===y||!quantity(a.inv,x)||!quantity(b.inv,y)||
-     a.reservedInv?.[x]||b.reservedInv?.[y]){
+     (a.reservedInv?.[x]&&!mouseTrade)||b.reservedInv?.[y]||
+     (x==='fernMouse'&&!mouseTrade)||y==='fernMouse'){
      v54CancelMeeting(a,b,'postponed when goods changed');return;
    }
    if(a.location==='post'&&(!entry(a)||!entry(b))){
      v54CancelMeeting(a,b,'blocked by trading-post permissions');return;
+   }
+   if(!quantity(a.inv,x)||!quantity(b.inv,y)){
+     v54CancelMeeting(a,b,'postponed after paying the market fee');return;
    }
    add(a.inv,x,-1);add(b.inv,y,-1);add(a.inv,y,1);add(b.inv,x,1);
    a.deals++;b.deals++;
@@ -2259,13 +2275,31 @@ function v54FinishMeeting(a,b,plan){
    v51Flight(y,b.worldPos,a.worldPos,1080);
    log(a.name+' exchanged '+items[x].name+' with '+b.name+' for '+items[y].name+
        ' face-to-face at '+WORLD[a.location].name+'.');
+   if(mouseTrade){
+     delete a.reservedInv[x];
+     b.reservedInv[x]=1;
+     Object.assign(mouse,{stage:'traded',formerOwner:a.id,currentOwner:b.id,day:state.day});
+     say(b.id,'I’ll keep your ribbon mouse safe, Fern.');
+     log('Ribbon mouse trade: Fern passed her den keepsake to Pebble in exchange for '+items[y].name.toLowerCase()+'.');
+     notify('Pebble now has Fern’s ribbon mouse. Ask Fern about it tomorrow.');
+     if(npc().id===a.id&&wanted[x]){
+       clearSelectionsOnly();
+       tradeResult('Fern already traded the ribbon mouse to Pebble.',false);
+     }
+   }
  }else{
    const kind=plan.kind,delta=kind==='argue'?-1:1;
    a.relTo[b.id]=clamp((a.relTo[b.id]||0)+delta,-6,10);
    b.relTo[a.id]=clamp((b.relTo[a.id]||0)+delta,-6,10);
    if(kind==='share'){
-     const gift=Object.keys(a.inv).find(id=>quantity(a.inv,id)>0);
-     if(gift){add(a.inv,gift,-1);add(b.inv,gift,1);v51Flight(gift,a.worldPos,b.worldPos,1000);}
+     const gift=Object.keys(a.inv).find(id=>quantity(a.inv,id)>0&&!a.reservedInv?.[id]&&id!=='fernMouse');
+     if(!gift){
+       v54CancelMeeting(a,b,'declined');
+       say(a.id,'I’m keeping what I brought with me today.');
+       save();
+       return;
+     }
+     add(a.inv,gift,-1);add(b.inv,gift,1);v51Flight(gift,a.worldPos,b.worldPos,1000);
    }else if(kind==='gather'&&count(a.inv)<12){
      const id=randomOf(['berry','stick','leaf','twig']);add(a.inv,id,1);
    }
@@ -2276,10 +2310,13 @@ function v54FinishMeeting(a,b,plan){
  }
  for(const [n,other] of [[a,b],[b,a]]){
    n.memory=Array.isArray(n.memory)?n.memory:[];
-   n.memory.unshift('D'+state.day+': Finished '+plan.kind+' face-to-face with '+other.name);
+   n.memory.unshift('D'+state.day+': Finished '+plan.kind+' face-to-face with '+other.name+
+     (plan.give==='fernMouse'?' (Fern’s ribbon mouse went to Pebble)':''));
    n.memory=n.memory.slice(0,16);
    n.meetPlan=null;n.activity='browsing';n.navSteps=[];n.navGoal=null;
  }
+ save();
+ render();
 }
 function v54FrameMeetings(dT){
  // Never let array order suppress the lead of a pair whose partner happens
@@ -2315,6 +2352,7 @@ function v54FrameMeetings(dT){
 const v54PrevFrame=v53NpcFrame;
 v53NpcFrame=function(dT){
  if(!state?.npcs)return;
+ v54QueueMouseTrade(dT);
  v54FrameMeetings(dT);
  // Keep the old furniture loop from dragging a wrestler away mid-scene.
  const busy=state.npcs.filter(n=>n.meetPlan&&!n.travelPlan);
@@ -2322,6 +2360,70 @@ v53NpcFrame=function(dT){
  for(const n of busy)n.activity='walk';
  v54PrevFrame(dT);
  busy.forEach((n,i)=>{if(n.meetPlan)n.activity=previous[i];});
+};
+
+function v54MouseVisitsPost(id){
+ const stage=state.treasureHistory?.fernMouse?.stage;
+ return (id==='fern'&&(stage==='keeping'||stage==='offered'))||
+   (id==='pebble'&&stage==='offered');
+}
+function v54MouseReply(n){
+ const mouse=state.treasureHistory.fernMouse;
+ if(n.id==='pebble')return 'I’m keeping Fern’s ribbon mouse safe.';
+ if(mouse?.stage==='traded'){
+   return state.day>mouse.day?'Pebble has my old ribbon mouse. He promised to tuck it beside him at night.':
+     'Pebble has it now. I liked knowing he would take care of it.';
+ }
+ if(!mouse){
+   add(n.inv,'fernMouse',1);
+   n.reservedInv.fernMouse=1;
+   state.treasureHistory.fernMouse={stage:'keeping',currentOwner:'fern',context:'Fern’s den keepsake'};
+   if(phase()!==3)scheduleV3();
+   log('Fern tucked her blue-ribbon mouse under her arm and planned a visit to the trading post.');
+   save();
+   return 'Mama used to tuck this mouse beside me. I’m keeping it close. Come see me at the post.';
+ }
+ if(n.location==='post'&&mouse.stage==='keeping'){
+   Object.assign(mouse,{stage:'offered',wait:9});
+   scheduleV3();
+   log('Fern turned down an offer for her ribbon mouse. She wants to ask Pebble if he would keep it close at bedtime.');
+   save();
+   return 'No, I still remember Mama tucking it beside me. Maybe I’d trade with Pebble if he promised to keep it close.';
+ }
+ return 'I’m keeping it close until I can talk to Pebble about taking care of it.';
+}
+function v54QueueMouseTrade(dT){
+ const mouse=state.treasureHistory?.fernMouse;
+ if(mouse?.stage!=='offered'||phase()===3)return;
+ const a=state.npcs.find(n=>n.id==='fern'),b=state.npcs.find(n=>n.id==='pebble');
+ if(a.location!=='post'||b.location!=='post'||a.travelPlan||b.travelPlan||
+    a.meetPlan||b.meetPlan||!quantity(a.inv,'fernMouse')||a.reservedInv.fernMouse!==1)return;
+ mouse.wait=Math.max(0,(mouse.wait??9)-dT);
+ if(mouse.wait>0)return;
+ const payment=['shell','stone',...Object.keys(b.inv)].find(id=>
+   id!=='fernMouse'&&quantity(b.inv,id)>0&&!b.reservedInv?.[id]);
+ if(payment&&v54StartMeeting(a,b,'trade',{give:'fernMouse',take:payment})){
+   mouse.wait=9;
+   say(a.id,'Pebble, would you trade for my mouse if you promise to keep it close?');
+   if(state.location==='post')notify('Fern is offering her ribbon mouse to Pebble.');
+ }
+}
+
+const v54PriorConversation=v5OpenConversation;
+v5OpenConversation=function(n){
+ v54PriorConversation(n);
+ if(n.id!=='fern'||!v5NearCub(n))return;
+ const option=document.createElement('button');
+ option.className='v5Choice';
+ option.id='fernMouseStory';
+ option.textContent='Ask Fern about her ribbon mouse';
+ document.querySelector('#v5AskItem')?.after(option);
+ option.onclick=()=>{
+   if(!v5NearCub(n)||n.travelPlan?.stage==='between')return;
+   const answer=v54MouseReply(n);
+   say(n.id,answer);
+   openModal('Fern’s ribbon mouse','<p>“'+h(answer)+'”</p>',[{text:'BACK',action:closeModal}]);
+ };
 };
 bumpSocial=function(){
  const pairs=[];
@@ -2340,8 +2442,8 @@ npcTrade=function(){
  for(const a of state.npcs)for(const b of state.npcs){
    if(a.id>=b.id||a.location!==b.location||a.travelPlan||b.travelPlan||
      a.meetPlan||b.meetPlan)continue;
-   for(const x of Object.keys(a.inv).filter(id=>quantity(a.inv,id)>0&&!a.reservedInv?.[id])){
-     for(const y of Object.keys(b.inv).filter(id=>quantity(b.inv,id)>0&&!b.reservedInv?.[id]&&id!==x)){
+   for(const x of Object.keys(a.inv).filter(id=>id!=='fernMouse'&&quantity(a.inv,id)>0&&!a.reservedInv?.[id])){
+     for(const y of Object.keys(b.inv).filter(id=>id!=='fernMouse'&&quantity(b.inv,id)>0&&!b.reservedInv?.[id]&&id!==x)){
        const gainA=itemVal(a,y)-itemVal(a,x);
        const gainB=itemVal(b,x)-itemVal(b,y);
        if(gainA>=-1&&gainB>=-1&&gainA+gainB>=2){
@@ -2363,6 +2465,19 @@ const v54PrevDraw=drawScene;
 drawScene=function(){
  v54PrevDraw();
  if(!state||mapOpen)return;
+ const mouse=state.treasureHistory?.fernMouse;
+ if(mouse){
+   const holder=state.npcs.find(n=>n.id===mouse.currentOwner);
+   if(holder?.location===state.location&&holder.travelPlan?.stage!=='between'&&quantity(holder.inv,'fernMouse')){
+     const [x,y]=holder.worldPos;
+     ctx.drawImage(v51ItemCanvas('fernMouse'),x+12,y-17,26,26);
+     if(mouse.stage==='traded'&&mouse.day===state.day&&state.location==='post'){
+       ctx.save();ctx.font='bold 11px monospace';ctx.fillStyle='#fff3ce';
+       ctx.fillText('Fern’s ribbon mouse',x+18,y+23);
+       ctx.restore();
+     }
+   }
+ }
  for(const a of state.npcs){
    const p=a.meetPlan;if(!p||p.stage!=='perform'||a.location!==state.location)continue;
    if(p.role!=='lead')continue;
