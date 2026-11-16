@@ -1,5 +1,6 @@
 """Reserved gifts and Fern's ribbon mouse in the assembled browser game."""
 import argparse
+from contextlib import ExitStack
 from copy import deepcopy
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -135,6 +136,7 @@ def story(page):
     assert any("Ribbon mouse trade" in entry["s"] for entry in traded["log"])
     expect(page.locator("#tradeResult")).to_contain_text("already traded")
     page.screenshot(path=OUT / "04-pebble-has-the-mouse.png")
+    page.locator(".v5PanelClose").click()
     page.locator("#v5Journal").click()
     expect(page.locator("#tab-history")).to_contain_text("Ribbon mouse trade: Fern passed her den keepsake to Pebble")
     assert page.evaluate("LittleTradingPost.importSave(JSON.parse(LittleTradingPost.exportSave()))")
@@ -170,8 +172,9 @@ def main():
     parser.add_argument("--chrome", action="store_true")
     args = parser.parse_args()
     handler = partial(SimpleHTTPRequestHandler, directory=str(ROOT))
-    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright() as p:
+    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright() as p, ExitStack() as cleanup:
         Thread(target=server.serve_forever, daemon=True).start()
+        cleanup.callback(server.shutdown)
         url = f"http://127.0.0.1:{server.server_port}/"
         browser = p.chromium.launch(channel="chrome" if args.chrome else None)
         for name, exercise in (("gifts", gift_cases), ("story", story)):
@@ -188,7 +191,6 @@ def main():
                 context.tracing.stop(path=OUT / f"{name}.zip")
                 context.close()
         browser.close()
-        server.shutdown()
 
 
 if __name__ == "__main__":
