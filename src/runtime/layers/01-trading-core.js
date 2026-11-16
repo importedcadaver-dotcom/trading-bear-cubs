@@ -45,6 +45,14 @@ let v512SaveWarningShown=false;
 function save(){
   try{
     localStorage.setItem(SAVE,JSON.stringify(state));
+    if(state.runId&&!state.dead&&state.location==='den'&&state.phase===0){
+      try{
+        const morning=JSON.parse(localStorage.getItem(SAVE+'.morning'));
+        if(morning?.runId!==state.runId||morning?.day!==state.day){
+          localStorage.setItem(SAVE+'.morning',JSON.stringify(state));
+        }
+      }catch{}
+    }
     v512SaveWarningShown=false;
     return true;
   }catch(e){

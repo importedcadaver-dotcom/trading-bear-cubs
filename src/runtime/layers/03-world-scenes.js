@@ -8,7 +8,7 @@ const WORLD={
  woods:{name:'Deep Woodland',short:'Woodland',x:450,y:96,color:'#658e72',links:['post','pebble','river','trail','playground'],cost:2,objects:[['Fallen old log',535,282,'logs'],['Berry bushes',205,286,'grove'],['Hollow stump',352,192,'hide']]},
  playground:{name:'Cubs’ Playground',short:'Playground',x:538,y:270,color:'#aec38f',links:['post','woods','rival'],cost:1,objects:[['Wrestling patch',403,301,'play'],['Swinging branch',598,230,'play'],['Resting bench',169,290,'rest']]},
  rival:{name:"Moss's Rival Market",short:'Rival market',x:649,y:320,color:'#b79c71',links:['post','playground','trail'],cost:1,objects:[['Moss’s sales table',279,265,'rival'],['Rumor sign',566,214,'notice'],['Public meeting spot',497,332,'play']]},
- trail:{name:'Forgotten Human Trail',short:'Human trail',x:635,y:110,color:'#a6a18a',links:['woods','river','rival'],cost:2,objects:[['Littered picnic spot',290,290,'trail'],['Old signpost',567,230,'notice'],['Bramble hiding place',465,355,'hide']]}
+ trail:{name:'Human Trail',short:'Human trail',x:635,y:110,color:'#a6a18a',links:['woods','river','rival'],cost:2,objects:[['Littered picnic spot',290,350,'trail'],['Boot prints by the sign',567,176,'humanTracks'],['Bramble hiding place',465,355,'hide'],['Parked car',640,380,'parkedCar']]}
 };
 const TIERS=[['common',50],['uncommon',27],['rare',14],['epic',6],['legendary',2.5],['mythic',.5]];
 const raritySets={uncommon:['feather','shell','button','fish','freshfish','wood','rope','clay','driedfish','water','apple','basket','ball','boat','cup','pinecone','wovenmat'],rare:['stone','quartz','marble','thimble','bell','jam','meal','dice','crown','drum','necklace','paintedstone','lantern','shovel','fishingrod','map','kite','birdhouse'],epic:['amber','compass','key','postcard','sticker','ticket'],legendary:['fishstone']};
@@ -21,7 +21,7 @@ const MYTHIC_VARIANTS={
 for(const [id,[name,color,desc]]of Object.entries(MYTHIC_VARIANTS)){items[id]={name,short:name.toLowerCase(),plural:name+'s',color,desc,category:'Human',usage:'artifact',rarity:'mythic'};base[id]=39;}
 const VAPES=new Set(['vape',...Object.keys(MYTHIC_VARIANTS)]);
 const rareItems=Object.keys(items).filter(id=>['rare','epic','legendary','mythic'].includes(items[id].rarity));
-const origin={post:[193,346],den:[348,326],pebble:[344,322],river:[310,243],woods:[385,330],playground:[360,325],rival:[363,315],trail:[320,344]};
+const origin={post:[193,346],den:[348,326],pebble:[344,322],river:[155,270],woods:[385,330],playground:[360,325],rival:[363,315],trail:[320,344]};
 const scenesDefault={fern:'den',pebble:'den',waffle:'post',juniper:'woods',sprout:'playground',moss:'rival'};
 let mapOpen=false,worldHotspots=[],lastTalk='',dialogueBubble=null,moveSteps=[],playerMoving=false,pendingInteraction=null,activeSearch='all',lastRarityResult='';
 function ensureV3(s){
@@ -234,13 +234,13 @@ function worldDrawV3(){const c=ctx,t=animationTime,loc=state.location;if(!state)
  if(loc==='post'){drawTerrain(c,t);drawStall(c);const structures=upgrades.filter(u=>state.upgrades.includes(u.id)&&extraUpgrades.some(e=>e.id===u.id));structures.forEach(u=>{const index=extraUpgrades.findIndex(e=>e.id===u.id);if(amenityPositions[index])drawAmenity(c,u.id,...amenityPositions[index]);});}
  else drawSceneBackground(c,loc,t);
  for(const o of WORLD[loc].objects){if(loc!=='post'||o[3]!=='stall')drawObject(c,o);if(o[3]!=='stall')textTag(c,o[0],o[1],o[2]-45);worldHotspots.push({id:o[3],x:o[1],y:o[2],r:42,kind:'object'});}
- const found=state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between');for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;if(!n.travelPlan&&!n.physicalIntent&&Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
- if(!n.travelPlan&&!n.physicalIntent){n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;}
+ const found=state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between');for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;const moving=!paused&&!$('modalBackdrop').classList.contains('open');if(moving&&!n.travelPlan&&!n.physicalIntent&&Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
+ if(moving&&!n.travelPlan&&!n.physicalIntent){n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;}
  const x=n.worldPos[0],y=n.worldPos[1];if(n.id===state.chosen){rect(c,x-24,y+29,48,4,'#f0cf75');}bear(c,x,y,1.1,n,t);textTag(c,n.name.toUpperCase(),x,y-40,n.id===state.chosen);worldHotspots.push({id:n.id,x,y,r:38,kind:'npc'});
  }
  if(loc==='den'){bear(c,563,242,1.8,{skin:'#80573d',ear:'#523b2e',scarf:'#cda66d',age:36,activity:'watching'},t);textTag(c,'MAMA',563,185);worldHotspots.push({id:'mama',x:563,y:243,r:61,kind:'mama'});}
  const p=state.playerPos,px=p[0],py=p[1];if(moveSteps.length){const to=moveSteps[0];const dx=to[0]-px,dy=to[1]-py,d=Math.hypot(dx,dy);if(d<7){state.playerPos=to;moveSteps.shift();playerMoving=false;if(!moveSteps.length&&pendingInteraction){const pending=pendingInteraction;pendingInteraction=null;queueMicrotask(()=>interactObject(pending.id,pending.spot));}}else{const speed=3.5;state.playerPos=[px+dx/d*speed,py+dy/d*speed];playerMoving=true;}}
- if(!state.dead)bear(c,px,py,1.13,{skin:state.avatar?.coat||'#a9764c',ear:state.avatar?.ears||'#714734',scarf:state.avatar?.accessory==='none'?(state.avatar?.coat||'#a9764c'):state.avatar?.accessory==='red ribbon'?'#bc6c62':state.avatar?.accessory==='blue bandana'?'#6e9cb6':'#d4af66',age:11,activity:playerMoving?'walk':state.pose},t);
+ if(!state.dead)bear(c,px,py,1.13,cubAppearance(state.avatar,playerMoving?'walk':state.pose),t);
  // The label is ABOVE the shop canopy, never on the cub's face.
  if(loc==='post')textTag(c,'★ YOUR POST ★',183,128,true);else textTag(c,'YOU',px,py-43,true);
  worldHotspots.push({id:'you',x:px,y:py,r:30,kind:'player'});

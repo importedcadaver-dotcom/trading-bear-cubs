@@ -172,6 +172,14 @@ let v512SaveWarningShown=false;
 function save(){
   try{
     localStorage.setItem(SAVE,JSON.stringify(state));
+    if(state.runId&&!state.dead&&state.location==='den'&&state.phase===0){
+      try{
+        const morning=JSON.parse(localStorage.getItem(SAVE+'.morning'));
+        if(morning?.runId!==state.runId||morning?.day!==state.day){
+          localStorage.setItem(SAVE+'.morning',JSON.stringify(state));
+        }
+      }catch{}
+    }
     v512SaveWarningShown=false;
     return true;
   }catch(e){
@@ -614,7 +622,7 @@ function forageZone(id){
  if(!canAct(zones[id].cost))return;
  if(count(state.inv)>=capacity())return notify('Your backpack is full.');
  state.foraged++;state.zoneTrips[id]++;state.pool[id]--;state.totalFound++;
- let idItem=state.v3?selectedRarityLoot(id):randomOf(zones[id].loot);
+ let idItem=state.v3?selectedRarityLoot(id,true):randomOf(zones[id].loot);
  if(!state.v3&&id==='trail'&&idItem==='vape'&&!(state.day>=6&&state.rep>=8&&rng()<.06))idItem=randomOf(zones[id].loot.filter(t=>t!=='vape'));
  if(id==='stream'&&idItem==='freshfish'&&!amount('fishingrod')&&!state.upgrades.includes('bridge')&&rng()<.5)idItem='clay';
  if(id==='logs'&&amount('shovel')&&rng()<.2)idItem='quartz';
@@ -857,6 +865,10 @@ function newBear(c,x,y,scale,n,t=0){
  pxEllipse(c,0,11,16,17,dark,2);pxEllipse(c,0,9,14,17,fur,2);
  pxEllipse(c,-14,16,8,9,dark,2);pxEllipse(c,14,16,8,9,dark,2);
  pxEllipse(c,-10,24,9,6,dark,2);pxEllipse(c,10,24,9,6,dark,2);
+ if(n.markings==='pale chest')pxEllipse(c,0,17,7,8,'#e6c89d',2);
+ if(n.markings==='dark paws'){
+  pxEllipse(c,-10,23,7,4,'#392b28',1);pxEllipse(c,10,23,7,4,'#392b28',1);
+ }
  for(const d of [-17,-13,-9,5,9,13]){rect(c,d,26,2,2,'#4b3b31')}
  // Ear placement is round and high/sideways, not long pointy canine ears.
  pxEllipse(c,-13,-18,8,8,dark,2);pxEllipse(c,13,-18,8,8,dark,2);
@@ -864,20 +876,36 @@ function newBear(c,x,y,scale,n,t=0){
  pxEllipse(c,0,-5,21,19,dark,2);pxEllipse(c,0,-6,19,18,fur,2);
  // Tiny eyebrow highlights and round inset eyes.
  rect(c,-11,-12,6,2,'#c9966f');rect(c,5,-12,6,2,'#c9966f');
- pxEllipse(c,-8,-8,3,4,'#282927',1);pxEllipse(c,8,-8,3,4,'#282927',1);
- rect(c,-9,-10,1,2,'#f9e6c7');rect(c,7,-10,1,2,'#f9e6c7');
+ const eyeColor={amber:'#b77529',brown:'#784530'}[n.eyes]||'#282927';
+ const eyeWidth=n.eyeShape==='round'?4:3,eyeHeight=n.eyeShape==='sleepy'?2:4;
+ for(const eyeX of [-8,8]){
+  pxEllipse(c,eyeX,-8,eyeWidth,eyeHeight,eyeColor,1);
+  rect(c,eyeX-1,-8-(eyeHeight>2?2:0),1,eyeHeight>2?2:1,'#f9e6c7');
+ }
  // Very short bear muzzle, NOT elongated or projecting dog snout.
- pxEllipse(c,0,2,11,7,'#d5ae82',2);pxEllipse(c,0,0,5,3,'#493a33',1);
+ pxEllipse(c,0,2,11,7,n.markings==='cream muzzle'?'#efd0a4':'#d5ae82',2);pxEllipse(c,0,0,5,3,'#493a33',1);
+ if(n.markings==='freckled snout'){
+  for(const dx of [-8,-5,5,8])rect(c,dx,2+(Math.abs(dx)===8?1:0),1,1,'#80533d');
+ }
  rect(c,-1,3,2,3,'#60443b');rect(c,-3,6,6,2,'#60443b');
  if(pose==='eat'){rect(c,-3,4,7,4,'#3b302c');rect(c,2,3,4,3,'#bb6072')}
  if(pose==='vape'){rect(c,-2,7,5,4,'#3d332d');rect(c,11,7,4,13,'#83979f');rect(c,12,8,2,3,'#d5d4cf')}
  // Shoulder fur patches and tiny scarfs.
- rect(c,-12,11,24,3,n.scarf||'#e0b66f');rect(c,6,14,4,7,n.scarf||'#e0b66f');
+ if(n.accessory!=='none'){
+  rect(c,-12,11,24,3,n.scarf||'#e0b66f');rect(c,6,14,4,7,n.scarf||'#e0b66f');
+ }
  if(pose==='proud'){rect(c,-4,-30,8,4,'#edbf77');rect(c,-2,-35,4,5,'#edbf77')}
  if(pose==='play'||pose==='wrestle') {pxEllipse(c,-17,7,7,7,fur,2);pxEllipse(c,17,8,7,7,fur,2)}
  c.restore();
 }
 bear=function(c,x,y,scale,n,t=0){newBear(c,x,y,scale,n,t)};
+function cubAppearance(avatar={},activity='idle'){
+ return {
+  skin:avatar.coat||'#a9764c',ear:avatar.ears||'#714734',age:11,activity,
+  scarf:avatar.accessory==='red ribbon'?'#bc6c62':avatar.accessory==='blue bandana'?'#6e9cb6':'#d4af66',
+  accessory:avatar.accessory,markings:avatar.markings,eyes:avatar.eyes,eyeShape:avatar.eyeShape
+ };
+}
 // Generic small icons share a consistent pixel grid and 4-tone palette with baseline art.
 drawItem=function(canvas,id){if(!EXTRA_ITEMS[id])return oldDrawItem(canvas,id);
  const c=canvas.getContext('2d');c.clearRect(0,0,24,24);c.imageSmoothingEnabled=false;
@@ -983,7 +1011,7 @@ const WORLD={
  woods:{name:'Deep Woodland',short:'Woodland',x:450,y:96,color:'#658e72',links:['post','pebble','river','trail','playground'],cost:2,objects:[['Fallen old log',535,282,'logs'],['Berry bushes',205,286,'grove'],['Hollow stump',352,192,'hide']]},
  playground:{name:'Cubs’ Playground',short:'Playground',x:538,y:270,color:'#aec38f',links:['post','woods','rival'],cost:1,objects:[['Wrestling patch',403,301,'play'],['Swinging branch',598,230,'play'],['Resting bench',169,290,'rest']]},
  rival:{name:"Moss's Rival Market",short:'Rival market',x:649,y:320,color:'#b79c71',links:['post','playground','trail'],cost:1,objects:[['Moss’s sales table',279,265,'rival'],['Rumor sign',566,214,'notice'],['Public meeting spot',497,332,'play']]},
- trail:{name:'Forgotten Human Trail',short:'Human trail',x:635,y:110,color:'#a6a18a',links:['woods','river','rival'],cost:2,objects:[['Littered picnic spot',290,290,'trail'],['Old signpost',567,230,'notice'],['Bramble hiding place',465,355,'hide']]}
+ trail:{name:'Human Trail',short:'Human trail',x:635,y:110,color:'#a6a18a',links:['woods','river','rival'],cost:2,objects:[['Littered picnic spot',290,350,'trail'],['Boot prints by the sign',567,176,'humanTracks'],['Bramble hiding place',465,355,'hide'],['Parked car',640,380,'parkedCar']]}
 };
 const TIERS=[['common',50],['uncommon',27],['rare',14],['epic',6],['legendary',2.5],['mythic',.5]];
 const raritySets={uncommon:['feather','shell','button','fish','freshfish','wood','rope','clay','driedfish','water','apple','basket','ball','boat','cup','pinecone','wovenmat'],rare:['stone','quartz','marble','thimble','bell','jam','meal','dice','crown','drum','necklace','paintedstone','lantern','shovel','fishingrod','map','kite','birdhouse'],epic:['amber','compass','key','postcard','sticker','ticket'],legendary:['fishstone']};
@@ -996,7 +1024,7 @@ const MYTHIC_VARIANTS={
 for(const [id,[name,color,desc]]of Object.entries(MYTHIC_VARIANTS)){items[id]={name,short:name.toLowerCase(),plural:name+'s',color,desc,category:'Human',usage:'artifact',rarity:'mythic'};base[id]=39;}
 const VAPES=new Set(['vape',...Object.keys(MYTHIC_VARIANTS)]);
 const rareItems=Object.keys(items).filter(id=>['rare','epic','legendary','mythic'].includes(items[id].rarity));
-const origin={post:[193,346],den:[348,326],pebble:[344,322],river:[310,243],woods:[385,330],playground:[360,325],rival:[363,315],trail:[320,344]};
+const origin={post:[193,346],den:[348,326],pebble:[344,322],river:[155,270],woods:[385,330],playground:[360,325],rival:[363,315],trail:[320,344]};
 const scenesDefault={fern:'den',pebble:'den',waffle:'post',juniper:'woods',sprout:'playground',moss:'rival'};
 let mapOpen=false,worldHotspots=[],lastTalk='',dialogueBubble=null,moveSteps=[],playerMoving=false,pendingInteraction=null,activeSearch='all',lastRarityResult='';
 function ensureV3(s){
@@ -1209,13 +1237,13 @@ function worldDrawV3(){const c=ctx,t=animationTime,loc=state.location;if(!state)
  if(loc==='post'){drawTerrain(c,t);drawStall(c);const structures=upgrades.filter(u=>state.upgrades.includes(u.id)&&extraUpgrades.some(e=>e.id===u.id));structures.forEach(u=>{const index=extraUpgrades.findIndex(e=>e.id===u.id);if(amenityPositions[index])drawAmenity(c,u.id,...amenityPositions[index]);});}
  else drawSceneBackground(c,loc,t);
  for(const o of WORLD[loc].objects){if(loc!=='post'||o[3]!=='stall')drawObject(c,o);if(o[3]!=='stall')textTag(c,o[0],o[1],o[2]-45);worldHotspots.push({id:o[3],x:o[1],y:o[2],r:42,kind:'object'});}
- const found=state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between');for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;if(!n.travelPlan&&!n.physicalIntent&&Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
- if(!n.travelPlan&&!n.physicalIntent){n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;}
+ const found=state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between');for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;const moving=!paused&&!$('modalBackdrop').classList.contains('open');if(moving&&!n.travelPlan&&!n.physicalIntent&&Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
+ if(moving&&!n.travelPlan&&!n.physicalIntent){n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;}
  const x=n.worldPos[0],y=n.worldPos[1];if(n.id===state.chosen){rect(c,x-24,y+29,48,4,'#f0cf75');}bear(c,x,y,1.1,n,t);textTag(c,n.name.toUpperCase(),x,y-40,n.id===state.chosen);worldHotspots.push({id:n.id,x,y,r:38,kind:'npc'});
  }
  if(loc==='den'){bear(c,563,242,1.8,{skin:'#80573d',ear:'#523b2e',scarf:'#cda66d',age:36,activity:'watching'},t);textTag(c,'MAMA',563,185);worldHotspots.push({id:'mama',x:563,y:243,r:61,kind:'mama'});}
  const p=state.playerPos,px=p[0],py=p[1];if(moveSteps.length){const to=moveSteps[0];const dx=to[0]-px,dy=to[1]-py,d=Math.hypot(dx,dy);if(d<7){state.playerPos=to;moveSteps.shift();playerMoving=false;if(!moveSteps.length&&pendingInteraction){const pending=pendingInteraction;pendingInteraction=null;queueMicrotask(()=>interactObject(pending.id,pending.spot));}}else{const speed=3.5;state.playerPos=[px+dx/d*speed,py+dy/d*speed];playerMoving=true;}}
- if(!state.dead)bear(c,px,py,1.13,{skin:state.avatar?.coat||'#a9764c',ear:state.avatar?.ears||'#714734',scarf:state.avatar?.accessory==='none'?(state.avatar?.coat||'#a9764c'):state.avatar?.accessory==='red ribbon'?'#bc6c62':state.avatar?.accessory==='blue bandana'?'#6e9cb6':'#d4af66',age:11,activity:playerMoving?'walk':state.pose},t);
+ if(!state.dead)bear(c,px,py,1.13,cubAppearance(state.avatar,playerMoving?'walk':state.pose),t);
  // The label is ABOVE the shop canopy, never on the cub's face.
  if(loc==='post')textTag(c,'★ YOUR POST ★',183,128,true);else textTag(c,'YOU',px,py-43,true);
  worldHotspots.push({id:'you',x:px,y:py,r:30,kind:'player'});
@@ -1496,7 +1524,7 @@ const v4CanvasWorld=document.getElementById('world');
 function v4CloseScreens(){v4Screen.classList.remove('open');v4MenuIsOpen=false;v4CreatorIsOpen=false;v4Keys.clear();}
 function v4MenuBanner(){return `<div class="v4Banner"><canvas id="v4BannerCanvas" width="600" height="150" aria-hidden="true"></canvas></div>`;}
 function v4DrawBanner(){const c=$('v4BannerCanvas');if(!c)return;const q=c.getContext('2d');q.imageSmoothingEnabled=false;q.fillStyle='#487753';q.fillRect(0,0,600,150);for(let i=0;i<12;i++){q.fillStyle=i%2?'#2f5d44':'#245640';q.fillRect(i*54,0,22,100);q.fillRect(i*54-23,6,72,47);}q.fillStyle='#9fb482';q.fillRect(0,107,600,45);drawPortraitMini(q,300,82,2.1);q.fillStyle='#eec781';q.font='bold 14px monospace';q.textAlign='center';q.fillText('THE FOREST HAS SECRETS...',300,139);}
-function drawPortraitMini(c,x,y,s=1){c.save();c.translate(x,y);c.scale(s,s);const fur=state?.avatar?.coat||'#a7794c';c.fillStyle='#503a2d';c.fillRect(-19,-25,11,13);c.fillRect(8,-25,11,13);c.fillStyle=fur;c.fillRect(-17,-22,34,36);c.fillRect(-20,8,40,21);c.fillStyle='#e6c79b';c.fillRect(-10,-1,20,13);c.fillStyle='#211d1c';c.fillRect(-10,-10,5,5);c.fillRect(6,-10,5,5);c.fillRect(-3,1,7,5);c.restore();}
+function drawPortraitMini(c,x,y,s=1){bear(c,x,y,s,cubAppearance(state?.avatar));}
 function v4ShowMenu(){v4MenuIsOpen=true;v4CreatorIsOpen=false;paused=true;v4Screen.innerHTML=`<div class="v4MenuCard">${v4MenuBanner()}<div class="smallcaps">LITTLE PAWS, BIG BUSINESS</div><h1>THE LITTLE TRADING POST</h1><p>Trade treasures. Explore a living woodland. Argue with your littermates. Try to keep Mama from finding your secrets.</p><div class="v4MenuGrid"><button data-main="new">✦ NEW GAME</button><button data-main="continue">▶ CONTINUE</button><button data-main="load">▣ LOAD SAVE</button><button class="secondary" data-main="tutorial">❀ HOW TO PLAY</button><button class="secondary" data-main="settings">⚙ SETTINGS</button><button class="secondary" data-main="credits">♡ CREDITS</button><button class="secondary" data-main="close">× CLOSE MENU</button><button class="secondary" data-main="dev">⌘ CHEATS & DEBUG</button></div><p class="v4Foot">Offline browser game · Autosaves locally · Original pixel graphics · Build ${V4_VERSION}</p></div>`;v4Screen.classList.add('open');v4DrawBanner();v4Screen.querySelectorAll('[data-main]').forEach(b=>b.onclick=()=>{switch(b.dataset.main){case'new':v4ShowCreator();break;case'continue':v4Continue();break;case'load':v4CloseScreens();devAction('import');break;case'tutorial':v4HowTo();break;case'settings':v4MenuSettings();break;case'credits':v4Credits();break;case'dev':v4CloseScreens();paused=false;showDev();break;case'close':v4Continue();break;}});}
 function v4Continue(){v4CloseScreens();paused=false;v4MenuDismissed=true;save();render();}
 function v4ShowCreator(){v4CreatorIsOpen=true;v4MenuIsOpen=false;const av=state.avatar;v4Screen.innerHTML=`<div class="v4MenuCard"><div class="smallcaps">YOUR LITTLE BROWN BEAR</div><h1>MAKE YOUR CUB</h1><p>You're 11 months old. Pebble and Fern are your littermates. Your story begins in Mama's Den.</p><div class="v4AvatarRow"><canvas id="v4AvatarPreview" width="96" height="96" aria-label="Your chosen brown bear cub"></canvas><div><b>♡ YOUR VERY OWN CUB</b><p>Round ears, big paws and a tiny business dream.</p></div></div><div class="v4FormGrid"><label>CUB'S NAME<input id="v4CubName" maxlength="24" value="${h(av.name==='Little Cub'?'':av.name)}" placeholder="Choose a name" /></label><label>GENDER<select id="v4Gender"><option>Female</option><option>Male</option><option>Nonbinary</option><option>Agender</option><option>Questioning</option><option>Unspecified</option><option>Custom</option></select></label><label>PRONOUNS<select id="v4Pronouns"><option>she/her</option><option>he/him</option><option>they/them</option><option>any pronouns</option><option>custom</option></select></label><label>COAT<select id="v4Coat"><option value="#aa774b">Cinnamon brown</option><option value="#78503c">Chocolate brown</option><option value="#b48c60">Honey brown</option><option value="#584739">Dark umber</option><option value="#9b694b">Russet brown</option></select></label><label>MARKING<select id="v4Marking"><option>Cream muzzle</option><option>Pale chest</option><option>Dark paws</option><option>Freckled snout</option></select></label><label>ACCESSORY<select id="v4Accessory"><option>Golden scarf</option><option>Red ribbon</option><option>Blue bandana</option><option>None</option></select></label><label>EYES<select id="v4Eyes"><option>Dark</option><option>Amber</option><option>Brown</option></select></label><label>TEMPERAMENT<select id="v4Temperament"><option>Curious</option><option>Mischievous</option><option>Shy</option><option>Bold</option><option>Gentle</option></select></label></div><div class="v4MenuGrid" style="margin-top:16px"><button id="v4CreateStart">☼ START MY STORY</button><button class="secondary" id="v4CreatorBack">← BACK</button></div><p class="v4Tiny" id="v4CreateError" aria-live="polite">A new game replaces this browser's current progress. Export a save first if needed.</p></div>`;v4Screen.classList.add('open');$('v4Gender').value=av.gender||'Unspecified';$('v4Pronouns').value=av.pronouns||'they/them';$('v4Coat').value=av.coat||'#aa774b';
@@ -1625,7 +1653,7 @@ function v4Nearest(maxDist=130){const ps=state.playerPos,loc=state.location;cons
  return entries.map(o=>({...o,d:Math.hypot(ps[0]-o.x,ps[1]-o.y)})).filter(o=>o.d<maxDist).sort((a,b)=>a.d-b.d)[0]||null;}
 function v4InteractNearest(){if(state.dead||v4MenuIsOpen||mapOpen)return;const n=v4Nearest(105);if(!n){notify('Nothing within reach. Walk closer to an object or cub.');return;}if(n.kind==='object'){interactObject(n.id,{x:n.x,y:n.y,id:n.label});return;}if(n.kind==='npc'){selectNPC(n.id);return;}if(n.kind==='mama'){talkMama('hug');switchTab('mama');return;}if(n.kind==='trader'){v4ShowTrader();return;}if(n.kind==='orphan'){v4OrphanDialogue();return;}}
 // Instead of stepping instantly on click, move toward the clicked point and use spatial actions on arrival.
-world.addEventListener('click',e=>{if(mapOpen||v4MenuIsOpen||v4CreatorIsOpen||state.dead)return;const point=v51CanvasPoint(world,e);if(!point)return;const {x,y}=point;const hotspot=worldHotspots.map(o=>({...o,d:Math.hypot(x-o.x,y-o.y)})).filter(o=>o.d<(o.r||38)).sort((a,b)=>a.d-b.d)[0];moveSteps=[];pendingInteraction=null;if(hotspot?.kind==='object'){v4AutoPoint=[clamp(hotspot.x+17,35,733),clamp(hotspot.y+27,135,407),()=>interactObject(hotspot.id,hotspot)];}else if(hotspot?.kind==='npc'){v4AutoPoint=[hotspot.x,clamp(hotspot.y+35,135,407),()=>selectNPC(hotspot.id)];}else if(hotspot?.kind==='mama'){v4AutoPoint=[510,260,()=>{v4CompleteStep('mama');v5MamaConversation();}];}else if(hotspot?.kind==='orphan'){v4AutoPoint=[405,355,()=>v4OrphanDialogue()];}else if(hotspot?.kind==='trader'){v4AutoPoint=[590,357,()=>v4ShowTrader()];}else v4AutoPoint=[clamp(x,35,733),clamp(y,135,407)];
+world.addEventListener('click',e=>{if(mapOpen||paused||v4MenuIsOpen||v4CreatorIsOpen||state.dead||$('modalBackdrop').classList.contains('open'))return;const point=v51CanvasPoint(world,e);if(!point)return;const {x,y}=point;const hotspot=worldHotspots.map(o=>({...o,d:Math.hypot(x-o.x,y-o.y)})).filter(o=>o.d<(o.r||38)).sort((a,b)=>a.d-b.d)[0];moveSteps=[];pendingInteraction=null;if(hotspot?.kind==='object'){v4AutoPoint=[clamp(hotspot.x+17,35,733),clamp(hotspot.y+27,135,407),()=>interactObject(hotspot.id,hotspot)];}else if(hotspot?.kind==='npc'){v4AutoPoint=[clamp(hotspot.x+(hotspot.x<state.playerPos[0]?42:-42),35,733),clamp(hotspot.y+26,135,407),()=>showCubChoices(hotspot.id)];}else if(hotspot?.kind==='mama'){v4AutoPoint=[510,260,()=>{v4CompleteStep('mama');v5MamaConversation();}];}else if(hotspot?.kind==='orphan'){v4AutoPoint=[405,355,()=>v4OrphanDialogue()];}else if(hotspot?.kind==='trader'){v4AutoPoint=[590,357,()=>v4ShowTrader()];}else v4AutoPoint=[clamp(x,35,733),clamp(y,135,407)];
  if(!v51RouteTo(v4AutoPoint)){v4AutoPoint=null;notify('No safe path to that spot. Try moving nearer or around the obstacle.');}
  e.stopImmediatePropagation();},true);
 function v4KeysHandler(e){if(e.key==='Tab'&&$('modalBackdrop').classList.contains('open'))return;if(['input','textarea','select'].includes(document.activeElement?.tagName?.toLowerCase()))return;if(v4MenuIsOpen||v4CreatorIsOpen)return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift','e','i','m','tab','escape',' '].includes(key)){e.preventDefault();e.stopImmediatePropagation();}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(key)){v4Keys.add(key);moveSteps=[];}if(e.repeat)return;
@@ -1643,7 +1671,31 @@ function v4DrawCars(c,ms){for(const a of v4RoadCars){const x=a.x,y=a.y;rect(c,x-
 function v4UpdateCars(dt){if(paused)return;for(const car of v4RoadCars){car.x+=car.speed*dt;if(car.speed>0&&car.x>830)car.x=-120;if(car.speed<0&&car.x< -120)car.x=830;const px=state.playerPos[0],py=state.playerPos[1];if(Math.abs(px-car.x)<43&&Math.abs(py-car.y)<27){v4RoadHit(car);break;}}}
 function v4RoadHit(car){if(state.dead||state.cheats.god)return;state.traffic.hits++;state.needs.health=clamp(state.needs.health-57);state.needs.energy=clamp(state.needs.energy-38);state.playerPos=[clamp(car.x-70,55,700),278];log('A moving vehicle struck the cub at the Human Trail road. Mama may need to help.');say('you','Ow! I should never run into the road!');v4Flash('ROAD COLLISION!');if(state.needs.health<=0){state.dead=true;openModal('A little life ended','<p>Your cub died after being struck by a vehicle. This is a serious, non-graphic ending. Load a saved story or use the developer menu to revive.</p>',[{text:'MAIN MENU',action:()=>{closeModal();v4ShowMenu();}},{text:'REVIVE WITH CHEATS',action:()=>{closeModal();devAction('revive');}}]);}else{notify('Injured! Seek Mama in the den.');}save();render();}
 // Swimming: visible danger tied to position, skill, energy and a current.
-function v4CheckWater(dt){const x=state.playerPos[0],y=state.playerPos[1],isWater=x>204&&x<601&&y>183;if(!isWater)return;state.tracker.swimming+=(dt*1.5);state.needs.energy=clamp(state.needs.energy-dt*(3.8-state.tracker.lessons*.3));const current=(Math.sin(animationTime/19)+1)*dt*17;state.playerPos[1]=clamp(y+current,135,410);if(state.needs.energy<14&&Math.random()<dt*.65){state.needs.health=clamp(state.needs.health-11);log('The current swept the exhausted cub underwater.');say('you','Help! The current is too strong!');state.playerPos=[145,294];if(state.needs.health<=0){state.dead=true;openModal('The river took a little cub','<p>Your exhausted cub was swept away by the current. The story has ended. You can return to the menu or revive using cheats.</p>',[{text:'MAIN MENU',action:()=>{closeModal();v4ShowMenu()}},{text:'REVIVE',action:()=>{closeModal();devAction('revive')} }]);}else notify('The river swept you to the bank. Be careful!');save();}}
+function v4CheckWater(dt){
+ const [x,y]=state.playerPos;
+ if(x<=200||x>=617||y<=183||state.cheats.god)return;
+ state.tracker.swimming+=dt*1.5;
+ state.needs.energy=clamp(state.needs.energy-dt*Math.max(1,3.8-state.tracker.lessons*.3));
+ state.playerPos[1]=Math.min(410,y+dt*19);
+ if(!state.riverWarning&&state.needs.energy<25){
+  state.riverWarning=true;
+  notify('Silverfin: The current is pulling hard. Get to either bank.');
+ }
+ if(state.needs.energy>12&&state.playerPos[1]<410)return;
+ v4AutoPoint=null;v51Waypoints=[];moveSteps=[];pendingInteraction=null;v4Keys.clear();
+ const injury=state.needs.energy<=12?36:20;
+ state.needs.health=clamp(state.needs.health-injury);
+ state.riverWarning=false;
+ if(state.needs.health===0){
+  finishCubRun('river','Silverfin’s current pulled your cub under.');
+  return;
+ }
+ state.playerPos=[x<410?153:654,382];
+ log('Silverfin swept you downstream. You reached the bank injured and exhausted.');
+ say('you','I made it to the bank. I need to rest.');
+ notify('Swept downstream · reached the bank · lost '+injury+' health');
+ save();render();
+}
 function v4OpenFishing(){if(state.location!=='river')return notify('Fishing happens at Silverfin Riverside.');if(state.dead)return;const pole=quantity(state.inv,'fishingrod')>0;v4FishingActive=true;v4FishingStart=performance.now();v4FishingPower=0;const hint=pole?'Your fishing pole gives you a better chance.':'You only have your paws; timing will be harder. Ask Mama for a lesson.';openModal('FISHING AT SILVERFIN',`<p>${hint}</p><div class="v4FishingMeter"><span id="v4FishingNeedle" class="v4FishingNeedle"></span></div><p class="v4Tiny">The marker moves back and forth. Press REEL when it reaches the green center. You can also press Space.</p><p id="v4FishingStatus">Watch the ripples for a good moment...</p>`,[{text:'REEL IN! (SPACE)',action:()=>v4ReelFish()},{text:'LET IT GO',secondary:true,action:()=>{v4FishingActive=false;closeModal();}}]);v4AnimateFishMeter();}
 function v4AnimateFishMeter(){if(!v4FishingActive)return;const el=$('v4FishingNeedle');if(!el)return;v4FishingPower=(Math.sin((performance.now()-v4FishingStart)/460)+1)/2;el.style.left=(v4FishingPower*100)+'%';requestAnimationFrame(v4AnimateFishMeter);}
 function v4ReelFish(){if(!v4FishingActive)return;v4FishingActive=false;const pole=quantity(state.inv,'fishingrod')>0;const accuracy=Math.abs(v4FishingPower-.5);const success=accuracy<(pole?.24:.13)+state.tracker.lessons*.02;const status=success?'You caught a fresh fish!':'The fish darted away. Try another cast.';state.needs.energy=clamp(state.needs.energy-5);state.tracker.fishing++;if(success){add(state.inv,'freshfish',1);state.tracker.fishCaught++;}setPose('play',1200);log(status);closeModal();say('you',status);notify(status);tick();}
@@ -1725,7 +1777,22 @@ function v5DrawTitle(){const el=$('v5TitleCanvas');if(!el)return;const c=el.getC
  c.fillStyle='#64432d';c.fillRect(375,365,260,84);c.fillStyle='#c79562';c.fillRect(386,372,239,14);c.fillRect(405,448,24,72);c.fillRect(584,448,24,72);for(let i=0;i<8;i++){c.fillStyle=i%2?'#e3be7a':'#c16b55';c.fillRect(385+i*30,311,30,53)}c.fillStyle='#f0daa4';c.fillRect(450,365,150,37);c.fillStyle='#344937';c.font='bold 22px Georgia';c.fillText('LITTLE POST',460,391);
  drawPortraitMini(c,520,437,2.3);drawPortraitMini(c,285,475,1.2);drawPortraitMini(c,711,460,1.4);
 }
-function v5ShowCreator(){v4CreatorIsOpen=true;v4MenuIsOpen=false;v4Screen.classList.add('open');const av=state.avatar||{};v4Screen.innerHTML=`<div class="v5-title"><canvas class="v5-titleCanvas" id="v5TitleCanvas" width="1000" height="620"></canvas><div class="v5-title-shade"></div><section class="v5-createPage"><h2>MAKE YOUR LITTLE BEAR</h2><p class="v5-mp">Eleven months old. Pebble and Fern are your littermates. Your story starts in Mama's Den.</p><div class="v5-createGrid"><canvas id="v5Preview" width="180" height="180" aria-label="Cub appearance preview"></canvas><div class="v5-createFields"><label>YOUR NAME<input id="v5CubName" maxlength="22" placeholder="What is your cub called?" value="${h(av.name==='Little Cub'?'':av.name||'')}"></label><label>GENDER<select id="v5Gender"><option value="Male">Male (he/him)</option><option value="Female">Female (she/her)</option></select></label><label>COAT COLOR<select id="v5Coat"><option value="#aa774b">Cinnamon brown</option><option value="#78503c">Chocolate</option><option value="#b48c60">Honey brown</option><option value="#584739">Dark umber</option><option value="#9b694b">Russet</option></select></label><label>MARKINGS<select id="v5Markings"><option>Cream muzzle</option><option>Pale chest</option><option>Dark paws</option><option>Freckled snout</option></select></label><label>ACCESSORY<select id="v5Accessory"><option>Golden scarf</option><option>Red ribbon</option><option>Blue bandana</option><option>None</option></select></label><label>EYES<select id="v5Eyes"><option>Dark</option><option>Amber</option><option>Brown</option></select></label><label>TEMPERAMENT<select id="v5Temperament"><option>Curious</option><option>Mischievous</option><option>Shy</option><option>Bold</option><option>Gentle</option><option>Evil</option></select></label></div></div><p class="v5-status" id="v5CreateErr" role="status">Your chosen temperament affects first impressions. Evil cubs start with serious grudges.</p><div class="v5-secondary-menu"><button class="v5-button" id="v5Start">START MY STORY</button><button class="v5-button" id="v5Back">BACK TO MAIN MENU</button></div></section></div>`;v5DrawTitle();$('v5Gender').value=av.gender==='Female'?'Female':'Male';$('v5Coat').value=av.coat||'#aa774b';const paint=()=>{const c=$('v5Preview'),q=c.getContext('2d');q.fillStyle='#b4cba7';q.fillRect(0,0,180,180);q.fillStyle='#50775b';q.fillRect(0,145,180,35);const fur=$('v5Coat').value;q.fillStyle=fur;q.fillRect(46,44,88,105);q.fillRect(37,23,26,34);q.fillRect(117,23,26,34);q.fillStyle=$('v5Markings').value==='Dark paws'?'#594335':'#e3c69b';q.fillRect(61,87,58,36);q.fillStyle='#322a25';q.fillRect(67,70,10,11);q.fillRect(103,70,10,11);q.fillRect(85,100,12,8);q.fillStyle=$('v5Accessory').value==='Red ribbon'?'#b86665':$('v5Accessory').value==='Blue bandana'?'#587d95':'#e2be70';if($('v5Accessory').value!=='None')q.fillRect(53,122,74,9);if($('v5Markings').value==='Freckled snout'){q.fillStyle='#835941';for(const x of [65,71,108,115])q.fillRect(x,101,4,3);}};v4Screen.querySelectorAll('select').forEach(el=>el.onchange=paint);paint();$('v5Back').onclick=v5ShowMenu;$('v5Start').onclick=()=>{const name=$('v5CubName').value.trim().replace(/\s+/g,' ');const reserved=new Set([...NPCS.map(n=>n.name.toLowerCase()),'mama','mama bear','moss','the panda','panda trader','wandering trader','foundling','little cub','you']);if(name.length<2||name.length>22||!/^[- 'A-Za-z]{2,22}$/.test(name)){return $('v5CreateErr').textContent='Please use 2–22 letters, spaces, hyphens or apostrophes.';}if(reserved.has(name.toLowerCase()))return $('v5CreateErr').textContent='That name already belongs to someone in Whisperwood. Choose another.';const gender=$('v5Gender').value,identity={name,gender,pronouns:gender==='Male'?'he/him':'she/her',coat:$('v5Coat').value,markings:$('v5Markings').value.toLowerCase(),accessory:$('v5Accessory').value.toLowerCase(),eyes:$('v5Eyes').value.toLowerCase(),temperament:$('v5Temperament').value,ears:'#6c4735'};state=fresh();state.characterMade=true;state.avatar=identity;state.location='den';state.playerPos=origin.den.slice();state.phase=0;state.day=1;state.phaseActs=0;state.mapVisits.den=1;state.tutorial={enabled:true,step:0,completed:false};for(const sibling of state.npcs.filter(n=>['fern','pebble'].includes(n.id)))sibling.location='den';if(identity.temperament==='Evil'){state.npcs.forEach(n=>{n.rel=-6;n.mood='SUSPICIOUS';n.memory.unshift('D1: Already distrusts the cub for their mean reputation.');});state.rep=0;state.mama.suspicion=28;state.mama.trust=32;log('Your evil reputation precedes you. Other cubs are wary.');}log(`${name} woke in the family den with three berries and one very nice stick.`);save();v4Continue();v5ClosePanel();render();notify('Good morning, '+name+'. Walk over to Mama and press E.');};}
+function v5ShowCreator(){v4CreatorIsOpen=true;v4MenuIsOpen=false;v4Screen.classList.add('open');const av=state.avatar||{};v4Screen.innerHTML=`<div class="v5-title"><canvas class="v5-titleCanvas" id="v5TitleCanvas" width="1000" height="620"></canvas><div class="v5-title-shade"></div><section class="v5-createPage"><h2>MAKE YOUR LITTLE BEAR</h2><p class="v5-mp">Eleven months old. Pebble and Fern are your littermates. Your story starts in Mama's Den.</p><div class="v5-createGrid"><canvas id="v5Preview" width="180" height="180" aria-label="Cub appearance preview"></canvas><div class="v5-createFields"><label>YOUR NAME<input id="v5CubName" maxlength="22" placeholder="What is your cub called?" value="${h(av.name==='Little Cub'?'':av.name||'')}"></label><label>GENDER<select id="v5Gender"><option value="Male">Male (he/him)</option><option value="Female">Female (she/her)</option></select></label><label>COAT COLOR<select id="v5Coat"><option value="#aa774b">Cinnamon brown</option><option value="#78503c">Chocolate</option><option value="#b48c60">Honey brown</option><option value="#584739">Dark umber</option><option value="#9b694b">Russet</option></select></label><label>MARKINGS<select id="v5Markings"><option>Cream muzzle</option><option>Pale chest</option><option>Dark paws</option><option>Freckled snout</option></select></label><label>ACCESSORY<select id="v5Accessory"><option>Golden scarf</option><option>Red ribbon</option><option>Blue bandana</option><option>None</option></select></label><label>EYES<select id="v5Eyes"><option>Dark</option><option>Amber</option><option>Brown</option></select></label><label>EYE SHAPE<select id="v5EyeShape"><option value="classic">Classic</option><option value="round">Round</option><option value="sleepy">Sleepy</option></select></label><label>TEMPERAMENT<select id="v5Temperament"><option>Curious</option><option>Mischievous</option><option>Shy</option><option>Bold</option><option>Gentle</option><option>Evil</option></select></label></div></div><p class="v5-status" id="v5CreateErr" role="status">Your chosen temperament affects first impressions. Evil cubs start with serious grudges.</p><div class="v5-secondary-menu"><button class="v5-button" id="v5Start">START MY STORY</button><button class="v5-button" id="v5Back">BACK TO MAIN MENU</button></div></section></div>`;v5DrawTitle();$('v5Gender').value=av.gender==='Female'?'Female':'Male';$('v5Coat').value=av.coat||'#aa774b';for(const [id,value] of Object.entries({v5Markings:av.markings,v5Accessory:av.accessory,v5Eyes:av.eyes,v5EyeShape:av.eyeShape,v5Temperament:av.temperament})){
+ const control=$(id),match=[...control.options].find(o=>o.value.toLowerCase()===value?.toLowerCase());
+ if(match)control.value=match.value;
+}
+const appearance=()=>({
+ coat:$('v5Coat').value,markings:$('v5Markings').value.toLowerCase(),
+ accessory:$('v5Accessory').value.toLowerCase(),eyes:$('v5Eyes').value.toLowerCase(),
+ eyeShape:$('v5EyeShape').value,ears:'#6c4735'
+});
+const paint=()=>{
+ const c=$('v5Preview'),q=c.getContext('2d');
+ q.fillStyle='#b4cba7';q.fillRect(0,0,180,180);
+ q.fillStyle='#50775b';q.fillRect(0,145,180,35);
+ bear(q,90,86,2.35,cubAppearance(appearance()));
+};
+v4Screen.querySelectorAll('select').forEach(el=>el.onchange=paint);paint();$('v5Back').onclick=v5ShowMenu;$('v5Start').onclick=()=>{const name=$('v5CubName').value.trim().replace(/\s+/g,' ');const reserved=new Set([...NPCS.map(n=>n.name.toLowerCase()),'mama','mama bear','moss','the panda','panda trader','wandering trader','foundling','little cub','you']);if(name.length<2||name.length>22||!/^[- 'A-Za-z]{2,22}$/.test(name)){return $('v5CreateErr').textContent='Please use 2–22 letters, spaces, hyphens or apostrophes.';}if(reserved.has(name.toLowerCase()))return $('v5CreateErr').textContent='That name already belongs to someone in Whisperwood. Choose another.';const gender=$('v5Gender').value,identity={name,gender,pronouns:gender==='Male'?'he/him':'she/her',...appearance(),temperament:$('v5Temperament').value};state=fresh();state.characterMade=true;state.avatar=identity;state.runId=Date.now().toString(36);state.location='den';state.playerPos=origin.den.slice();state.phase=0;state.day=1;state.phaseActs=0;state.mapVisits.den=1;state.tutorial={enabled:true,step:0,completed:false};for(const sibling of state.npcs.filter(n=>['fern','pebble'].includes(n.id)))sibling.location='den';if(identity.temperament==='Evil'){state.npcs.forEach(n=>{n.rel=-6;n.mood='SUSPICIOUS';n.memory.unshift('D1: Already distrusts the cub for their mean reputation.');});state.rep=0;state.mama.suspicion=28;state.mama.trust=32;log('Your evil reputation precedes you. Other cubs are wary.');}log(`${name} woke in the family den with three berries and one very nice stick.`);save();v4Continue();v5ClosePanel();render();notify('Good morning, '+name+'. Walk over to Mama and press E.');};}
 v4ShowMenu=v5ShowMenu;v4ShowCreator=v5ShowCreator;
 // World-first action bar and contextual panel. The old functionality is retained behind context.
 const v5Dock=document.createElement('div');v5Dock.id='v5Dock';v5Dock.innerHTML=`<span class="v5Tiny" id="v5Loc">THE WOODLAND IS YOURS</span><div style="display:flex;flex-wrap:wrap;gap:6px"><button class="v5Emph" id="v5Talk">♡ TALK / TRADE</button><button id="v5Bag">🎒 BAG</button><button id="v5Build">🔨 BUILD</button><button id="v5Map">✧ MAP</button><button id="v5Journal">📜 JOURNAL</button><button id="v5Rest">☾ SLEEP</button><button id="v5Pause">Ⅱ MENU</button></div>`;document.querySelector('.worldFrame').after(v5Dock);
@@ -1825,7 +1892,7 @@ function v5DrawPanda(c,x,y,t=0){c.save();c.translate(x,y);c.scale(1.3,1.3);const
 function v5DrawNewborn(c,x,y,scale=1){c.save();c.translate(x,y);c.scale(scale,scale);c.fillStyle='#6e493b';c.fillRect(-21,6,43,18);c.fillStyle='#b68d6b';c.fillRect(-18,-15,36,36);c.fillRect(-23,-14,11,13);c.fillRect(13,-14,11,13);c.fillStyle='#d5ae86';c.fillRect(-10,-1,20,10);c.fillStyle='#3d2e28';c.fillRect(-9,-4,8,2);c.fillRect(4,-4,8,2);c.fillRect(-2,3,4,3);c.fillStyle='#7b5945';c.fillRect(-23,23,12,9);c.fillRect(10,23,12,9);c.restore();}
 // Bedtime is a real family routine. The sleeping nest advances morning; travel home is contextual.
 function v5Sleep(){if(state.dead)return;if(state.location!=='den'){if(phase()===3){state.mama.memories.unshift(`D${state.day}: Collected ${v4Name()} after curfew and took the cub home.`);state.mama.trust=clamp(state.mama.trust-2);log(`Mama found ${v4Name()} away after curfew and carried the cub home. The post is closed for the night.`);travel('den',true);setPose('carry',1800);v5WorldEffect('MAMA!');return notify('Mama brought you back to the den. Walk to your nest to sleep.');}return notify("Your sleeping nest is at Mama's Den. Use the map and return home.");}
- const nest=WORLD.den.objects.find(o=>o[3]==='nest');if(Math.hypot(state.playerPos[0]-nest[1],state.playerPos[1]-nest[2])>115)return notify('Walk to your soft sleeping nest before bedtime.');openModal('BEDTIME IN THE FAMILY DEN',`<p>${h(v4Name())} climbs into the mossy nest. Fern and Pebble settle nearby; Mama checks that her cubs are warm.</p><p>Sleeping advances to the next morning, restores energy, consumes food and water, and allows the other cubs to live their own day.</p>`,[{text:'CURL UP AND SLEEP',action:()=>{closeModal();setPose('sleep',2400);log(`${v4Name()} curled up next to Fern and Pebble as Mama watched over them.`);state.v5Bedtime=true;state.phase=3;bedtime();state.location='den';state.playerPos=origin.den.slice();state.v5Bedtime=false;state.mama.memories.unshift(`D${state.day}: The litter slept safely together.`);state.mama.trust=clamp(state.mama.trust+1);v5NPCDependenceSim();save();render();notify('☀ A new morning. Your family is waking up.');}},{text:'STAY UP',secondary:true,action:closeModal}]);}
+ const nest=WORLD.den.objects.find(o=>o[3]==='nest');if(Math.hypot(state.playerPos[0]-nest[1],state.playerPos[1]-nest[2])>115)return notify('Walk to your soft sleeping nest before bedtime.');openModal('BEDTIME IN THE FAMILY DEN',`<p>${h(v4Name())} climbs into the mossy nest. Fern and Pebble settle nearby; Mama checks that her cubs are warm.</p><p>Sleeping advances to the next morning, restores energy, consumes food and water, and allows the other cubs to live their own day.</p>`,[{text:'CURL UP AND SLEEP',action:()=>{closeModal();finishDayAdventure();setPose('sleep',2400);log(`${v4Name()} curled up next to Fern and Pebble as Mama watched over them.`);state.v5Bedtime=true;state.phase=3;bedtime();state.location='den';state.playerPos=origin.den.slice();state.v5Bedtime=false;state.mama.memories.unshift(`D${state.day}: The litter slept safely together.`);state.mama.trust=clamp(state.mama.trust+1);v5NPCDependenceSim();save();render();notify('☀ A new morning. Your family is waking up.');}},{text:'STAY UP',secondary:true,action:closeModal}]);}
 const v5OldInteractObj=interactObject;interactObject=function(action,spot){if(action==='nest')return v5Sleep();if(action==='notice')return v5ShowNotice();if(action==='gate')return v5MarketGate();if(action==='stall'){v5OpenPanel('craft');return notify('Choose something to build. Then place it in your clearing.');}if(action==='rival')return v5RivalConflict();const before=state?.totalFound||0;const r=v5OldInteractObj(action,spot);if(['grove','logs','trail','food','drink','gather','play'].includes(action)){v5WorldEffect(action==='food'?'♥':action==='drink'?'💧':'+');if((state.totalFound||0)>before)setPose('carry',1400);}return r;};
 function v5ShowNotice(){if(state.location!=='post'&&state.location!=='rival')return notify('The notice board is at the market.');const quests=state.v5Quests;const eligible=state.npcs.filter(n=>n.location==='post'||n.location==='rival');if(!quests[`d${state.day}`]){const n=eligible[0]||state.npcs[state.day%state.npcs.length];const id=n.love||'fish';quests[`d${state.day}`]={id,npc:n.id,done:false,accepted:false};}const q=quests[`d${state.day}`],npcq=state.npcs.find(n=>n.id===q.npc);
  openModal('WHISPERWOOD NOTICE BOARD',`<p>Notes are left by real cubs with real wishes. The board also tracks rumors and market opportunities.</p><div class="v5DealReason"><b>Today's request — ${h(npcq.name)}</b><p>“I really want ${h(items[q.id].name)}. Bring it to me if you can!”</p><p>${q.done?'COMPLETED':q.accepted?'ACCEPTED — meet the cub and deliver':'Not yet accepted'}</p></div><p><b>Rumors:</b> ${h(state.event)} · Panda often passes the Human Trail every third forest day. Your own stall rules affect visiting traders.</p><p>Rumor about your family: ${h(state.mama.memories?.[0]||'Mama is watching her cubs.')}</p><button class="v5Choice" id="v5AcceptQuest" ${q.done?'disabled':''}>${q.accepted?'DELIVER THE ITEM':'ACCEPT THIS REQUEST'}</button>`,[{text:'CLOSE',action:closeModal}]);$('v5AcceptQuest').onclick=()=>{if(!q.accepted){q.accepted=true;log(`Accepted ${npcq.name}'s request for ${items[q.id].name}.`);closeModal();notify('Quest accepted. Find the item and meet the cub.');return;}if(npcq.location!==state.location)return notify(`${npcq.name} isn't here. Visit the cub in person.`);if(quantity(state.inv,q.id)<1)return notify('You do not have the requested item.');add(state.inv,q.id,-1);add(npcq.inv,q.id,1);q.done=true;npcq.rel=clamp(npcq.rel+2,-6,10);state.rep+=2;log(`Delivered ${items[q.id].name} to ${npcq.name}. The cub kept the item and thanked you.`);closeModal();render();save();};}
@@ -1840,10 +1907,32 @@ function v5ValidBuild(x,y){return state.location==='post'&&x>50&&x<708&&y>156&&y
 v5Placement.addEventListener('mousemove',e=>{const r=v5Placement.getBoundingClientRect();const point=v51CanvasPoint(v5Placement,e);if(!point)return;v5BuildXY=[Math.round(point.x),Math.round(point.y)];v5GhostDraw()});
 v5Placement.addEventListener('click',e=>{e.stopPropagation();if(!v5PendingBuild)return;const [x,y]=v5BuildXY;if(!v5ValidBuild(x,y))return notify('Place this structure in a clear spot, away from the trading counter and other buildings.');const recipe=v5PendingBuild;if(!canPay(state.inv,recipe.cost))return notify('Materials were used elsewhere.');spend(state.inv,recipe.cost);state.v5Builds.push({id:recipe.id,x,y,day:state.day});state.upgrades.push(recipe.id);state.rep+=2;log(`${v4Name()} physically built ${recipe.title} at (${x},${y}) using real supplies.`);v5CancelBuild();setPose('carry',2200);v5WorldEffect('BUILT!');notify(`${recipe.title} built here! Your cub used real materials.`);tick();render();});
 function v5CancelBuild(){v5PendingBuild=null;v5Placement.style.display='none';v5Placement.getContext('2d').clearRect(0,0,768,434);}
-window.addEventListener('keydown',e=>{if(e.key==='Escape'&&v5PendingBuild){e.preventDefault();e.stopImmediatePropagation();v5CancelBuild();notify('Construction canceled. No materials spent.');}if(e.key==='Escape'&&document.body.classList.contains('v5-panel-open'))v5ClosePanel();},true);
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&v5PendingBuild){e.preventDefault();e.stopImmediatePropagation();v5CancelBuild();notify('Construction canceled. No materials spent.');}if(e.key==='Escape'&&document.body.classList.contains('v5-panel-open')){e.preventDefault();e.stopImmediatePropagation();v5ClosePanel();}},true);
 const v5OldScene=drawScene;drawScene=function(){v5OldScene();if(!state||state.location!=='post')return;for(const b of state.v5Builds)drawAmenity(ctx,b.id,b.x-23,b.y-10);};
 // Lethal direct road impacts, with a small, non-graphic visual aftermath.
-v4RoadHit=function(car){if(state.dead||state.cheats.god)return;state.traffic.hits++;state.dead=true;state.deathCause='road';state.playerPos=[clamp(car.x-42,65,700),clamp(car.y+44,250,325)];state.needs.health=0;log(`D${state.day}: ${v4Name()} died instantly after a direct moving-vehicle collision. The nearby woodland remembers.`);paused=true;save();render();openModal('A LITTLE LIFE ENDED',`<p>${h(v4Name())} was struck by a vehicle at the Human Trail. The cub died instantly. The scene is shown non-graphically.</p><p>The save can be loaded or restarted. The danger was caused by visible traffic on the roadway.</p>`,[{text:'MAIN MENU',action:()=>{closeModal();v5ShowMenu()}},{text:'DEVELOPER REVIVE',action:()=>{closeModal();devAction('revive')}}]);};
+function finishCubRun(cause,message){
+ state.dead=true;state.deathCause=cause;state.needs.health=0;
+ log(message);paused=true;save();render();
+ showCubRunEnd(message);
+}
+function showCubRunEnd(message){
+ let morning=null;
+ try{
+  const saved=JSON.parse(localStorage.getItem(SAVE+'.morning'));
+  if(saved?.runId===state.runId&&saved?.day===state.day&&!saved.dead)morning=saved;
+ }catch{}
+ const choices=[{text:'NEW RUN',action:()=>{closeModal();v5ShowCreator();}}];
+ if(morning)choices.unshift({text:'RELOAD THIS MORNING',action:()=>{
+  closeModal();v512ImportSave(morning);v4Continue();
+ }});
+ openModal('A little life ended','<p>'+h(message)+'</p>',choices);
+}
+v4RoadHit=function(car){
+ if(state.dead||state.cheats.god)return;
+ state.traffic.hits++;
+ state.playerPos=[clamp(car.x-42,65,700),clamp(car.y+44,250,325)];
+ finishCubRun('road','A passing car struck your cub at the Human Trail.');
+};
 function v5WorldEffect(word='✦',kind='good'){v4SimEffects.push({text:word,x:clamp(state.playerPos[0],65,675),y:state.playerPos[1]-58,until:performance.now()+1200});}
 // Real item states are visible: check word placement and layer in the world renderer, plus unique panda/newborn art.
 const v5OldDev=devAction;devAction=function(id){if(id==='honey'){state.honey+=10;state.cheats.on=true;log('DEV: added 10 honey portions.');save();render();return;}if(id==='dependent'){const n=npc();n.dependency.nic=75;n.cravings.nic=83;n.lastUseDay=-999;const loved=n.love||'fish';add(n.inv,loved,1);log(`DEV: seeded ${n.name} with dependence and a cherished item for scenario testing.`);save();render();return;}if(id==='drugs'){for(const k of Object.keys(V5_DRUGS))add(state.inv,k,1);state.cheats.on=true;log('DEV: supplied fictional substances for interaction testing.');save();render();return;}return v5OldDev(id);};
@@ -2692,7 +2781,361 @@ window.LittleTradingPost={...window.LittleTradingPost,
   if(!window.__LTP_TEST__||!Number.isInteger(step)||step<0||step>7)return false;
   state.tutorial={enabled:true,step,completed:false};render();save();return true;
  }};
-load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
+/* In-world conversation choices and the day adventure. */
+const cubChoices=document.createElement('div');
+cubChoices.id='cubChoices';
+cubChoices.hidden=true;
+cubChoices.innerHTML='<button type="button">Talk</button><button type="button">Trade</button>';
+world.parentElement.append(cubChoices);
+let choiceCub=null,tradeSession=null;
+const dayStyle=document.createElement('style');
+dayStyle.textContent=`
+ #cubChoices{position:absolute;z-index:20;transform:translate(-50%,-100%);display:flex;gap:4px}
+ #cubChoices[hidden]{display:none}
+ #cubChoices button{background:#fff1c9;border:2px solid #654a35;color:#3f3426;padding:6px 12px;box-shadow:2px 3px #493627;font: bold 15px Georgia,serif}
+ #modalBackdrop.woodland-talk{align-items:end;background:#150e0824;padding:0 12px 24px}
+ #modalBackdrop.woodland-talk #modal{background:#fff1cc;border:4px double #805630;max-width:650px;font:17px Georgia,serif;box-shadow:5px 6px #3d2a20}
+ #modalBackdrop.woodland-talk #modalTitle{font-family:Georgia,serif;color:#573921}
+ #modalBackdrop.woodland-talk .v4OptionStack{display:flex;flex-wrap:wrap;gap:6px}
+ body.woodland-barter #tab-trade{background:#f4e7c4;border:2px solid #816242;padding:10px}
+ body.woodland-barter .rightColumn .tabs,body.woodland-barter #cubStrip,
+ body.woodland-barter #npcQuote,body.woodland-barter #tradeHint,
+ body.woodland-barter #tradeMeter,body.woodland-barter .bluffWrap{display:none}
+ #woodlandTradeStatus{padding:8px;background:#223f35;color:#fff4cf;font:15px Georgia,serif}
+ #tab-history .sectionHead{font-family:Georgia,serif}
+`;
+document.head.append(dayStyle);
+
+function clearCubChoices(){
+ choiceCub=null;
+ cubChoices.hidden=true;
+}
+function showCubChoices(id){
+ const n=state.npcs.find(c=>c.id===id);
+ if(!v5NearCub(n)||n.travelPlan?.stage==='between'){
+  clearCubChoices();
+  return notify('That cub moved away. Walk closer to try again.');
+ }
+ clearCubChoices();
+ choiceCub=id;
+ positionCubChoices();
+}
+function positionCubChoices(){
+ if(!choiceCub)return;
+ const n=state.npcs.find(c=>c.id===choiceCub);
+ if(!v5NearCub(n)||mapOpen||paused||v4MenuIsOpen||$('modalBackdrop').classList.contains('open')){
+  clearCubChoices();return;
+ }
+ const rect=world.getBoundingClientRect(),frame=world.parentElement.getBoundingClientRect();
+ const scale=Math.min(rect.width/768,rect.height/434);
+ cubChoices.style.left=clamp(rect.left-frame.left+(rect.width-768*scale)/2+n.worldPos[0]*scale,70,frame.width-70)+'px';
+ cubChoices.style.top=Math.max(45,rect.top-frame.top+(rect.height-434*scale)/2+(n.worldPos[1]-58)*scale)+'px';
+ cubChoices.hidden=false;
+}
+const dayPreviousDraw=drawScene;
+drawScene=function(){
+ dayPreviousDraw();positionCubChoices();
+ if(v4AutoPoint&&!mapOpen&&!paused){
+  const [x,y]=v4AutoPoint;
+  ctx.save();ctx.strokeStyle='#ffe3a0';ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(x,y,9,4,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+ }
+ if(state?.location==='trail'&&!mapOpen){
+  rect(ctx,612,371,60,19,'#5a4344');
+  rect(ctx,622,359,38,15,'#73565a');
+  rect(ctx,630,362,23,9,'#a5b8a8');
+  rect(ctx,620,387,10,7,'#332d31');rect(ctx,654,387,10,7,'#332d31');
+  textTag(ctx,'PARKED CAR',640,349);
+ }
+};
+world.addEventListener('pointerdown',clearCubChoices);
+cubChoices.children[0].onclick=()=>{
+ const id=choiceCub;clearCubChoices();if(id)selectNPC(id);
+};
+cubChoices.children[1].onclick=()=>{
+ const id=choiceCub;clearCubChoices();
+ if(!id)return;
+ state.chosen=id;openWoodlandTrade();
+};
+
+const dayCloseModal=closeModal;
+closeModal=function(){
+ dayCloseModal();$('modalBackdrop').classList.remove('woodland-talk');
+};
+const dayOpenConversation=v5OpenConversation;
+function tellDayAdventure(id){
+ const adventure=state.dayAdventure;
+ const n=state.npcs.find(cub=>cub.id===id);
+ const lines={
+  mama:'I’m glad you came back to tell me. Tomorrow, tell me where you’re going before you leave.',
+  fern:'I want to see where you went someday. Will you take me?',
+  pebble:'Next time, tell me where you’re going. I worried when you were gone.'
+ };
+ if(!adventure.told){
+  adventure.told=id;
+  if(n)n.rel=clamp(n.rel+1,-6,10);
+  else state.mama.memories.unshift('D'+state.day+': You told Mama about '+adventure.subject+'.');
+  log((n?.name||'Mama')+' remembered your story about '+adventure.subject+'.');
+  save();
+ }
+ const found=items[adventure.find];
+ $('modalBody').textContent=lines[id]+(found?' And let me see that '+found.name.toLowerCase()+' you found.':'');
+}
+function trailTracks(){
+ if(state.humanTracksDay===state.day)return notify('The footsteps have faded for today.');
+ openModal('Boot prints by the sign','<p>Fresh tracks cross the trail. Someone moves behind the trees.</p>',[
+  {text:'Back away',secondary:true,action:()=>{
+   closeModal();state.humanTracksDay=state.day;recordDayAdventure('the fresh boot prints');
+   notify('Human Trail · you backed away from the tracks');save();
+  }},
+  {text:'Look closer',action:()=>{
+   closeModal();
+   state.humanTracksDay=state.day;
+   const roll=rng();
+   if(roll<.22){
+    recordDayAdventure('a shot in the woods');
+    state.needs.health=clamp(state.needs.health-55);
+    if(state.needs.health===0)return finishCubRun('poacher','A poacher shot your cub near the Human Trail.');
+    travel('den',true);
+    state.mama.memories.unshift('D'+state.day+': Mama found the cub hurt and brought them back to the den.');
+    notify('A shot rang out · Mama brought you home injured');
+    save();render();return;
+   }
+   if(roll<.48){
+    recordDayAdventure('the human who took you');
+    openModal('Taken from the trail','<p>A human has carried you away from the road. You can hear Mama calling beyond the trees.</p>',[
+     {text:'Call to Mama',action:()=>{
+      closeModal();travel('den',true);
+      state.needs.energy=clamp(state.needs.energy-16);
+      state.mama.memories.unshift('D'+state.day+': Followed the cub’s call and brought them home.');
+      notify('Mama heard you · back in the den');save();render();
+     }}
+    ]);
+    $('modalBackdrop').classList.add('woodland-talk');
+    return;
+   }
+   recordDayAdventure('the hiker crossing the trail');
+   say('you','They walked right past me. I don’t think they saw me.');
+   notify('Human Trail · the hiker kept walking');save();
+  }}
+ ]);
+ $('modalBackdrop').classList.add('woodland-talk');
+}
+const dayMamaConversation=v5MamaConversation;
+v5MamaConversation=function(){
+ dayMamaConversation();
+ if(!$('modalBackdrop').classList.contains('open'))return;
+ $('modalBackdrop').classList.add('woodland-talk');
+ if(state.dayAdventure?.day!==state.day)return;
+ const tell=document.createElement('button');
+ tell.className='v5Choice';tell.textContent='Tell Mama what happened today';
+ $('modalBody').querySelector('.v4OptionStack')?.append(tell);
+ tell.onclick=()=>tellDayAdventure('mama');
+};
+v5OpenConversation=function(n){
+ dayOpenConversation(n);
+ if(!$('modalBackdrop').classList.contains('open'))return;
+ dialogueBubble=null;
+ $('modalBackdrop').classList.add('woodland-talk');
+ document.querySelector('#modalBody .v5DealReason p')?.remove();
+ if(['fern','pebble'].includes(n.id)){
+  const clue=document.createElement('button');
+  clue.className='v5Choice';clue.textContent='Ask about the Human Trail';
+  $('v5AskItem')?.after(clue);
+  clue.onclick=()=>{
+   state.trailClue=true;
+   const line='The people come back to the picnic spot. I saw something with a shiny mouthpiece by the litter.';
+   log(n.name+' told you to check the Human Trail picnic litter for a shiny relic.');
+   $('modalBody').textContent=line;
+   save();
+  };
+  if(state.dayAdventure?.day===state.day&&state.location==='den'){
+   const tell=document.createElement('button');
+   tell.className='v5Choice';tell.textContent='Tell '+n.name+' what happened today';
+   clue.after(tell);
+   tell.onclick=()=>tellDayAdventure(n.id);
+  }
+ }
+ if($('v5BarterOption'))$('v5BarterOption').onclick=()=>{closeModal();openWoodlandTrade();};
+};
+const tradeStatus=document.createElement('p');
+tradeStatus.id='woodlandTradeStatus';
+$('tradeBtn').before(tradeStatus);
+tradeStatus.hidden=true;
+const counterButton=document.createElement('button');
+counterButton.type='button';counterButton.className='v5Choice';counterButton.hidden=true;
+$('tradeResult').after(counterButton);
+
+function openWoodlandTrade(){
+ const n=npc();
+ if(!v5NearCub(n)||n.travelPlan?.stage==='between')return notify('That cub is out of reach.');
+ tradeSession={cub:n.id,proposal:null,wasPaused:paused};
+ paused=true;offered={};wanted={};dialogueBubble=null;$('bluffCheck').checked=false;
+ document.body.classList.add('woodland-barter');
+ tradeStatus.hidden=false;
+ counterButton.hidden=true;
+ $('tradeBtn').textContent='Propose trade';
+ tradeStatus.textContent='Your offer · pending / '+n.name+'’s offer · pending';
+ tradeResult('Choose something to offer and something to ask for.',false);
+ v5OpenPanel('trade');render();
+}
+const dayClosePanel=v5ClosePanel;
+v5ClosePanel=function(){
+ if(tradeSession){
+  paused=tradeSession.wasPaused;tradeSession=null;
+  tradeStatus.hidden=true;
+  counterButton.hidden=true;
+  $('tradeBtn').textContent='Shake paws ↗';
+  document.body.classList.remove('woodland-barter');
+ }
+ dayClosePanel();
+};
+document.querySelector('.v5PanelClose').onclick=()=>v5ClosePanel();
+window.addEventListener('keydown',event=>{
+ if(!tradeSession)return;
+ if(event.key==='Escape'){
+  event.preventDefault();event.stopImmediatePropagation();v5ClosePanel();
+ }else if(['w','a','s','d','e','i','m','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)){
+  event.preventDefault();event.stopImmediatePropagation();
+ }
+},true);
+function reviseWoodlandTrade(){
+ if(!tradeSession)return;
+ tradeSession.proposal=null;
+ counterButton.hidden=true;
+ tradeStatus.textContent='Your offer · pending / '+npc().name+'’s offer · pending';
+ $('tradeBtn').textContent='Propose trade';
+}
+const dayToggleItem=toggleItem,dayClearTrade=clearTrade;
+toggleItem=function(side,id){reviseWoodlandTrade();dayToggleItem(side,id);};
+clearTrade=function(){reviseWoodlandTrade();dayClearTrade();};
+$('clearBtn').onclick=clearTrade;
+$('tradeBtn').addEventListener('click',event=>{
+ if(!tradeSession)return;
+ event.stopImmediatePropagation();
+ const n=npc();
+ if(n.id!==tradeSession.cub||!v5NearCub(n)||!canPay(state.inv,offered)||!canPay(n.inv,wanted)){
+  clearTrade();return tradeResult('Those goods are no longer available.',false);
+ }
+ if(!count(offered)||!count(wanted))return tradeResult('Choose goods on both sides.',false);
+ if(wanted.fernMouse||SharedBarterRules.isNullBarter(offered,wanted)){
+  negotiate();reviseWoodlandTrade();return;
+ }
+ const reserved=Object.keys(wanted).find(id=>n.reservedInv?.[id]);
+ if(reserved)return tradeResult(n.name+': “I’m keeping '+items[reserved].name.toLowerCase()+'. It matters to me.”',false);
+ const opinion=tradeMood();
+ if(opinion.score< -1){
+  const extra=Object.keys(state.inv).filter(id=>quantity(state.inv,id)>quantity(offered,id))
+    .find(id=>itemVal(n,id)+opinion.score>=-1);
+  if(extra&&['fern','pebble'].includes(n.id)){
+   const item=items[extra].name.toLowerCase();
+   tradeResult(n.name+': “Add one '+item+' and we have a deal.”',false);
+   counterButton.textContent='Add one '+item+' to your offer';
+   counterButton.hidden=false;
+   counterButton.onclick=()=>toggleItem('offer',extra);
+  }else{
+   tradeResult(n.name+': “I could use a '+items[n.love].name.toLowerCase()+'. What else have you got?”',false);
+  }
+  return;
+ }
+ const proposal=JSON.stringify([offered,wanted]);
+ if(tradeSession.proposal!==proposal){
+  tradeSession.proposal=proposal;
+  tradeStatus.textContent=n.name+' accepts · Your confirmation is pending';
+  $('tradeBtn').textContent='Accept and trade';
+  return;
+ }
+ reviseWoodlandTrade();
+ const before=state.trades;
+ negotiate();
+ if(state.trades>before)tradeStatus.textContent='Both bears accepted · Goods exchanged';
+},true);
+
+function recordDayAdventure(subject){
+ if(state.dayAdventure?.day===state.day)return;
+ state.dayAdventure={day:state.day,subject};
+ log('Today’s adventure: '+subject+'.');
+}
+function finishDayAdventure(){
+ if(state.dayAdventure?.day===state.day)return;
+ const subject=randomOf([
+  'a fox calling from the trees just as Mama put out the fire',
+  'Fern finding everyone’s missing sticks in Pebble’s nest',
+  'a branch falling across the den entrance in the dark'
+ ]);
+ recordDayAdventure(subject);
+ state.mama.memories.unshift('D'+state.day+': We all heard about '+subject+'.');
+}
+const dayOldLoot=selectedRarityLoot;
+selectedRarityLoot=function(area,playerSearch=false){
+ if(playerSearch&&area==='trail'&&state.trailClue&&!quantity(state.inv,'vape')&&rng()<.045)return 'vape';
+ return dayOldLoot(area);
+};
+const dayPreviousObject=interactObject;
+const dayContinue=v4Continue;
+v4Continue=function(){
+ dayContinue();
+ if(state.dead&&['road','river','poacher'].includes(state.deathCause)){
+  paused=true;
+  const message={river:'Silverfin’s current pulled your cub under.',road:'A passing car struck your cub at the Human Trail.',poacher:'A poacher shot your cub near the Human Trail.'};
+  showCubRunEnd(message[state.deathCause]);
+ }
+};
+items.trailSweets={name:'Abandoned edibles',short:'packet',color:'#bd8c58',rarity:'rare',category:'Curiosity',desc:'A torn human packet with strange sweets inside.'};
+items.glassPipe={name:'Glass bong',short:'glass',color:'#85b2ac',rarity:'rare',category:'Curiosity',desc:'A strange glass object caught in the brambles.'};
+const trailDiscoveries=[
+ {subject:'fresh footprints beside the picnic spot',line:'Wet footprints cross the path. Whoever made them was here recently.'},
+ {subject:'a torn bag of abandoned edibles',item:'trailSweets',line:'A torn packet of human sweets is caught on a twig. Some of the cubs whisper about what was inside.'},
+ {subject:'a glass bong caught in the brambles',item:'glassPipe',line:'A glass pipe catches the light in the brambles. Someone dropped it in a hurry.'}
+];
+interactObject=function(action,spot){
+ if(action==='humanTracks')return trailTracks();
+ if(action==='parkedCar'){
+  openModal('Voices behind the glass','<p>Two teenagers are kissing in the parked car. They haven’t seen you.</p>',[
+   {text:'Let them see you',action:()=>{
+    closeModal();recordDayAdventure('the parked car');
+    say('you','They saw me! They both jumped!');
+    log('Two teenagers in a parked car scrambled apart when they spotted a cub outside.');
+    notify('Two startled humans · you backed away before they got out');
+    save();
+   }},
+   {text:'Slip away',secondary:true,action:()=>{
+    closeModal();recordDayAdventure('the voices in the parked car');save();
+   }}
+  ]);
+  $('modalBackdrop').classList.add('woodland-talk');
+  return;
+ }
+ if(action==='trail'&&state.dayAdventure?.day!==state.day){
+  const find=randomOf(trailDiscoveries);
+  recordDayAdventure(find.subject);say('you',find.line);
+  if(find.item&&count(state.inv)<capacity()){
+   add(state.inv,find.item,1);
+   log('You brought '+items[find.item].name.toLowerCase()+' back from the picnic spot.');
+  }
+  save();
+ }
+ if(action==='logs'&&state.location==='woods'&&state.dayAdventure?.day!==state.day&&rng()<.12){
+  recordDayAdventure('a body hidden behind the fallen log');
+  say('you','There’s someone behind the log. They aren’t moving. I need to tell Mama.');
+  notify('Deep Woodland · you backed away from the fallen log');
+  state.mama.memories.unshift('D'+state.day+': The cub was frightened by what they saw behind the fallen log.');
+  save();return;
+ }
+ if(action==='trail'){
+  const before={...state.inv};
+  const result=dayPreviousObject(action,spot);
+  const found=Object.keys(state.inv).find(id=>quantity(state.inv,id)>quantity(before,id));
+  if(found&&state.dayAdventure?.day===state.day){
+   state.dayAdventure.find=found;
+   save();
+  }
+  return result;
+ }
+ return dayPreviousObject(action,spot);
+};
+
+load();drawPortrait($('logoBear'),cubAppearance(state.avatar));render();requestAnimationFrame(animate);opening();
 })();
 </script>
 </body>

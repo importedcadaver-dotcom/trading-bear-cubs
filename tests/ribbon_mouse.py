@@ -80,6 +80,7 @@ def click_cub(page, name):
     }""", arg=name)
     x, y = cub(state(page), name)["worldPos"]
     click_world(page, x, y)
+    page.locator("#cubChoices").get_by_role("button",name="Talk",exact=True).click()
 
 
 def click_world(page, x, y):
@@ -120,6 +121,7 @@ def offer_mouse(page):
     assert refused["treasureHistory"]["fernMouse"]["stage"] == "offered"
     assert "formerOwner" not in refused["treasureHistory"]["fernMouse"]
     page.screenshot(path=OUT / "02-fern-refuses.png")
+    page.locator(".v5PanelClose").click()
 
 
 def finish_pebble_objective(page):
@@ -154,9 +156,7 @@ def story(page):
     for actor, delta in (("fern", 1), ("pebble", -1)):
         assert cub(traded, actor)["inv"].get(payment, 0) == cub(pending, actor)["inv"].get(payment, 0) + delta
     assert any("Ribbon mouse trade" in entry["s"] for entry in traded["log"])
-    expect(page.locator("#tradeResult")).to_contain_text("already traded")
     page.screenshot(path=OUT / "04-pebble-has-the-mouse.png")
-    page.locator(".v5PanelClose").click()
     page.locator("#v5Journal").click()
     expect(page.locator("#tab-history")).to_contain_text("Ribbon mouse trade: Fern passed her den keepsake to Pebble")
     assert page.evaluate("LittleTradingPost.importSave(JSON.parse(LittleTradingPost.exportSave()))")

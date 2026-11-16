@@ -182,5 +182,3 @@ window.LittleTradingPost={...window.LittleTradingPost,
   if(!window.__LTP_TEST__||!Number.isInteger(step)||step<0||step>7)return false;
   state.tutorial={enabled:true,step,completed:false};render();save();return true;
  }};
-load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
-})();

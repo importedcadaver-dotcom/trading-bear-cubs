@@ -24,6 +24,7 @@ PARTS=[
     "07-actor-travel.js",
     "09-physical-encounters.js",
     "08-mobile-and-saves.js",
+    "10-playable-day.js",
 ]
 MARKER="<!--LTP_GAME_BUNDLE-->"
 
