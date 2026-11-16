@@ -192,7 +192,7 @@ def early_story(page):
     before = state(page)
     assert before["tutorial"]["step"] == 0
     assert cub(before, "pebble")["location"] == "den"
-    assert not cub(before, "pebble")["travelPlan"]
+    assert not cub(before, "pebble").get("travelPlan")
     page.reload()
     page.locator("#v5Continue").click()
     reloaded = state(page)
