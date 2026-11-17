@@ -81,6 +81,7 @@ def click_cub(page, name):
     x, y = cub(state(page), name)["worldPos"]
     click_world(page, x, y)
     page.locator("#cubChoices").get_by_role("button",name="Talk",exact=True).click()
+    page.locator("#continueCubDialogue").click()
 
 
 def click_world(page, x, y):

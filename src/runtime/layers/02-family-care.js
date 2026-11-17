@@ -109,9 +109,9 @@ const phaseNames=['MORNING','AFTERNOON','EVENING','NIGHT'];
 const phaseCosts=[3,4,3,2];
 const maxV=100;
 const clamp=(v,a=0,b=100)=>Math.min(b,Math.max(a,v));
-const oldFresh=fresh,oldLoad=load,oldRender=render,oldRenderJournal=renderJournal,oldNpcTrade=npcTrade,
- oldDrawItem=drawItem,oldBear=bear,oldDrawStall=drawStall,oldDrawScene=drawScene,
- oldBuildCraft=buildCraft,oldNegotiate=negotiate,oldEvent=event;
+const oldFresh=fresh,oldLoad=load,oldRenderJournal=renderJournal,oldNpcTrade=npcTrade,
+ oldDrawItem=drawItem,oldBear=bear,
+ oldBuildCraft=buildCraft,oldEvent=event;
 function ensureV2(s){
  if(s.v2===2)return s;
  s.v2=2;s.phase=0;s.phaseActs=0;s.needs={food:84,water:83,energy:86,comfort:72,health:100};
@@ -354,14 +354,13 @@ itemVal=function(n,id){
  return Math.max(1,v);
 };
 // The player must own rights to their own stall; solo trades are possible, but at the clearing fee applies to visitors.
-const baseNegotiate=negotiate;
-negotiate=function(){
+function settlePostBarter(){
  if(phase()===3)return notify('It is night. The trading table is closed.');
  if(state.day<=state.closedUntil)return notify('Mama closed the stall for your recovery this morning.');
  if(!entry(npc())){notify(npc().name+' will only trade off-site right now. Adjust your market policy.');render();return;}
  if(!canAct(3))return;
  const before=state.trades,beforeRep=state.rep,name=npc().id,dealCount=state.dailyDeals[name]||0;
- baseNegotiate();if(state.trades>before){
+ settleBaseBarter();if(state.trades>before){
   state.dailyDeals[name]=dealCount+1;
   if(dealCount>=2){state.rep=beforeRep;log('Repeat trades with the same cub are still useful, but no longer earn daily reputation.');}
   actionCost(3);setPose('chat');save();render();}
@@ -389,7 +388,7 @@ function foodUse(id){
  else{const [n,c]=food[id]||[8,0];state.needs.food=clamp(state.needs.food+n);state.needs.comfort=clamp(state.needs.comfort+c)}
  add(state.inv,id,-1);setPose('eat');log(`You ${id==='water'?'drank':'ate'} ${items[id].name.toLowerCase()}. You feel better.`);notify('Yum! Your needs improved.');tick();
 }
-function itemAction(id,what){
+function useInventoryItem(id,what){
  if(!amount(id))return notify('You no longer have that item.');
  const dangerous=id==='vape';
  if(what==='examine'){openModal('Inspect: '+items[id].name,`<p>${h(items[id].desc)}</p><p><b>Category:</b> ${h(items[id].category||'Treasure')}<br><b>In your bag:</b> ${amount(id)}<br><b>Your stall value:</b> varies by the cub who wants it.</p>`,[{text:'CLOSE',action:closeModal}]);return;}
@@ -645,33 +644,8 @@ function drawAmenity(c,id,x,y){
  }
 }
 const amenityPositions=[[349,167],[461,181],[546,198],[626,270],[340,278],[550,312],[396,301],[662,348],[68,215],[692,247],[356,379],[34,325],[584,377],[444,120]];
-const baseDrawScene=drawScene;
-drawScene=function(){baseDrawScene();const c=ctx;
- const construction=upgrades.filter(u=>state.upgrades.includes(u.id)&&extraUpgrades.some(e=>e.id===u.id));
- construction.forEach((u,i)=>{if((state.v5Builds||[]).some(b=>b.id===u.id))return;let idx=extraUpgrades.findIndex(e=>e.id===u.id),[x,y]=amenityPositions[idx];drawAmenity(c,u.id,x,y);
-  // Visual buildings have no floating word labels, keeping the crowded forest legible.
- });
- // Proud displayed stock, drawn as actual objects behind the counter.
- let offset=0;for(const id of Object.keys(state.displayed).filter(k=>state.displayed[k]>0)){
-  const cv=document.createElement('canvas');cv.width=cv.height=24;drawItem(cv,id);c.drawImage(cv,110+offset*32,230,27,27);offset++;
- }
- // Mama is physically present near the path at evening/night and never vanishes from the story.
- if(phase()===0||phase()>=2){bear(c,715,291,1.45,{skin:'#7f513a',ear:'#553b31',scarf:'#d1ab70',age:32,activity:'watching'},animationTime);
-  rect(c,673,226,87,16,'#ffefc8');c.font='bold 11px monospace';c.textAlign='center';c.fillStyle='#394735';c.fillText('MAMA BEAR',718,237);
- }
- // Show vapor as a visible short-lived cloud only when the unsafe artifact was used.
- if(state.pose==='vape'&&Date.now()<state.poseUntil){
-  for(const p of specialParticles){p.age+=.8;const dy=p.age*.7;const xx=p.x+Math.sin(p.age/8)*7;
-    if(p.age<70){c.fillStyle=p.age%3>1?'#e0dacf':'#c0d2c9';c.fillRect(xx,p.y-dy,5+Math.floor(p.age/11),3+Math.floor(p.age/15));}}
- }
- if(state.pose&&Date.now()>state.poseUntil)state.pose='idle';
- // Distinguish day phases visually in the canvas itself; not CSS only.
- if(phase()===3){c.fillStyle='#12284452';c.fillRect(0,0,768,434);
-   c.fillStyle='#f4dc91';c.fillRect(686,20,12,12);for(let i=0;i<15;i++){let x=(i*97+37)%768,y=(i*43+21)%150;c.fillStyle='#f3dca5';c.fillRect(x,y,2,2)}}
- else if(phase()===2){c.fillStyle='#d99d5e25';c.fillRect(0,0,768,434)}
-};
-// Decoration and player actor pose: original base sprite receives the richer bear drawing.
-render=function(){oldRender();renderV2()};
+function renderCare(){
+ renderV2()};
 renderJournal=function(){oldRenderJournal();const hint=$('tab-journal').querySelector('.quest');if(hint){hint.querySelector('b').textContent='✦ GROW A WOODLAND LANDMARK';$('questText').textContent=`${state.rep}/25 reputation · ${state.trades}/12 trades · ${state.upgrades.length}/6 structures${state.victory?' · MILESTONE COMPLETE':''}`;}
  const paras=$('tab-journal').querySelectorAll('p');for(const p of paras){if(p.textContent.includes('sealed human vape'))p.innerHTML='Some cubs whisper of the <b>mythical human vape</b>. It can be found on the trail very rarely, examined, hidden, displayed or used. Using it triggers visible vapor, coughing, declining health, dependence risk and Mama’s concern; it is never a health or economic power-up.';}
  const countEl=$('discoveryCount');countEl.textContent=state.npcs.filter(n=>n.discovered).length+'/6 SECRETS';

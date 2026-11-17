@@ -77,9 +77,8 @@ function v53NpcFrame(dT){
    }
  }
 }
-const v53PreviousDraw=drawScene;
-drawScene=function(){
- v53PreviousDraw();
+function drawAmenityActivity(){
+
  if(!state||mapOpen)return;
  for(const n of state.npcs){
    if(n.location!==state.location||n.travelPlan?.stage==='between')continue;

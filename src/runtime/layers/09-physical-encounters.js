@@ -137,6 +137,7 @@ function v54FinishMeeting(a,b,plan){
      Object.assign(mouse,{stage:'traded',formerOwner:a.id,currentOwner:b.id,day:state.day});
      say(b.id,'I’ll keep your ribbon mouse safe, Fern.');
      log('Ribbon mouse trade: Fern passed her den keepsake to Pebble in exchange for '+items[y].name.toLowerCase()+'.');
+     recordDayAdventure('Fern passing her ribbon mouse to Pebble');
      notify('Pebble now has Fern’s ribbon mouse. Ask Fern about it tomorrow.');
      if(npc().id===a.id&&wanted[x]){
        clearSelectionsOnly();
@@ -317,9 +318,8 @@ npcTrade=function(){
 };
 // Supplement real actor sprites with distinct physical activity cues.
 // The actual bear moves to the encounter location before any effect appears.
-const v54PrevDraw=drawScene;
-drawScene=function(){
- v54PrevDraw();
+function drawPhysicalEncounters(){
+
  if(!state||mapOpen)return;
  const mouse=state.treasureHistory?.fernMouse;
  if(mouse){

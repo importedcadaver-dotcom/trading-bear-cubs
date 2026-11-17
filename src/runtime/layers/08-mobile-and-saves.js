@@ -170,9 +170,8 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();first.focus();
  }
 });
-const v522PreviousRender=render;
-render=function(){
- v522PreviousRender();
+function renderSceneAccessibility(){
+
  if(state?.location&&WORLD[state.location])world.setAttribute('aria-label',
    'Woodland scene: '+WORLD[state.location].name+'. Use W A S D to move, E to interact, M to open the map, and I for inventory.');
 };

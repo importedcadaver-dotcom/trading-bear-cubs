@@ -19,7 +19,11 @@ dayStyle.textContent=`
  body.woodland-barter #npcQuote,body.woodland-barter #tradeHint,
  body.woodland-barter #tradeMeter,body.woodland-barter .bluffWrap{display:none}
  #woodlandTradeStatus{padding:8px;background:#223f35;color:#fff4cf;font:15px Georgia,serif}
+ #tab-history{background:#f4e8c9;color:#483a29;border-left:5px double #a58b52;padding:12px}
  #tab-history .sectionHead{font-family:Georgia,serif}
+ #v5EventToast{top:auto;bottom:15px;border:1px solid #e1c58a;background:#223f35;font:15px Georgia,serif}
+ body:has(#modalBackdrop.woodland-talk.open) #v5EventToast{bottom:auto;top:12px;max-width:min(340px,85vw)}
+ #modalBackdrop.woodland-talk .v4OptionStack[hidden]{display:none}
 `;
 document.head.append(dayStyle);
 
@@ -49,9 +53,16 @@ function positionCubChoices(){
  cubChoices.style.top=Math.max(45,rect.top-frame.top+(rect.height-434*scale)/2+(n.worldPos[1]-58)*scale)+'px';
  cubChoices.hidden=false;
 }
-const dayPreviousDraw=drawScene;
-drawScene=function(){
- dayPreviousDraw();positionCubChoices();
+function drawDayInteractions(){
+ positionCubChoices();
+ if(!mapOpen&&state){
+  for(const n of state.npcs){
+   if(n.location!==state.location||n.travelPlan?.stage==='between'||n.lastUseDay!==state.day||n.mood!=='UNWELL')continue;
+   const [x,y]=n.worldPos;
+   ctx.save();ctx.fillStyle='#efe4b7';ctx.font='bold 11px Georgia,serif';
+   ctx.fillText('Unwell',x+19,y-23);ctx.restore();
+  }
+ }
  if(v4AutoPoint&&!mapOpen&&!paused){
   const [x,y]=v4AutoPoint;
   ctx.save();ctx.strokeStyle='#ffe3a0';ctx.lineWidth=2;
@@ -67,7 +78,19 @@ drawScene=function(){
 };
 world.addEventListener('pointerdown',clearCubChoices);
 cubChoices.children[0].onclick=()=>{
- const id=choiceCub;clearCubChoices();if(id)selectNPC(id);
+ const id=choiceCub;clearCubChoices();
+ if(!id)return;
+ selectNPC(id);
+ const options=$('modalBody').querySelector('.v4OptionStack');
+ if(!options)return;
+ options.hidden=true;
+ const next=document.createElement('button');
+ next.type='button';next.className='v5Choice';next.id='continueCubDialogue';next.textContent='Continue';
+ options.before(next);
+ next.onclick=()=>{
+  options.hidden=false;options.querySelector('button')?.focus();next.remove();
+ };
+ next.focus();
 };
 cubChoices.children[1].onclick=()=>{
  const id=choiceCub;clearCubChoices();
@@ -98,6 +121,29 @@ function tellDayAdventure(id){
  const found=items[adventure.find];
  $('modalBody').textContent=lines[id]+(found?' And let me see that '+found.name.toLowerCase()+' you found.':'');
 }
+function resolveTrailCapture(waited){
+ closeModal();
+ state.trailCapture=null;
+ travel('den',true);
+ state.needs.energy=clamp(state.needs.energy-(waited?24:16));
+ state.mama.memories.unshift('D'+state.day+': '+(waited?'Found the cub waiting quietly.':'Followed the cub’s call.'));
+ notify('Mama brought you home · you can move again');
+ save();render();
+}
+function showTrailCapture(){
+ const heard=state.trailCapture==='heard';
+ openModal('Taken from the trail',heard?
+  '<p>Mama answers from the trees. You can see her through the brush.</p>':
+  '<p>A human carried you away from the road. You can hear Mama calling beyond the trees.</p>',
+  heard?[
+   {text:'Go to Mama',action:()=>resolveTrailCapture(false)},
+   {text:'Wait for Mama',secondary:true,action:()=>resolveTrailCapture(true)}
+  ]:[
+   {text:'Call to Mama',action:()=>{state.trailCapture='heard';save();showTrailCapture();}},
+   {text:'Stay quiet',secondary:true,action:()=>resolveTrailCapture(true)}
+  ]);
+ $('modalBackdrop').classList.add('woodland-talk');
+}
 function trailTracks(){
  if(state.humanTracksDay===state.day)return notify('The footsteps have faded for today.');
  openModal('Boot prints by the sign','<p>Fresh tracks cross the trail. Someone moves behind the trees.</p>',[
@@ -120,15 +166,7 @@ function trailTracks(){
    }
    if(roll<.48){
     recordDayAdventure('the human who took you');
-    openModal('Taken from the trail','<p>A human has carried you away from the road. You can hear Mama calling beyond the trees.</p>',[
-     {text:'Call to Mama',action:()=>{
-      closeModal();travel('den',true);
-      state.needs.energy=clamp(state.needs.energy-16);
-      state.mama.memories.unshift('D'+state.day+': Followed the cub’s call and brought them home.');
-      notify('Mama heard you · back in the den');save();render();
-     }}
-    ]);
-    $('modalBackdrop').classList.add('woodland-talk');
+    state.trailCapture='taken';save();showTrailCapture();
     return;
    }
    recordDayAdventure('the hiker crossing the trail');
@@ -143,7 +181,17 @@ v5MamaConversation=function(){
  dayMamaConversation();
  if(!$('modalBackdrop').classList.contains('open'))return;
  $('modalBackdrop').classList.add('woodland-talk');
- if(state.dayAdventure?.day!==state.day)return;
+ const adventure=state.dayAdventure;
+ if(adventure?.day===state.day-1&&adventure.told==='mama'){
+  const recall=document.createElement('button');
+  recall.className='v5Choice';recall.textContent='Talk about yesterday';
+  $('modalBody').querySelector('.v4OptionStack')?.append(recall);
+  recall.onclick=()=>{
+   $('modalBody').textContent='I’m still thinking about '+adventure.subject+'. Tell me before you head out again.';
+   if(!adventure.recalled){adventure.recalled=true;state.mama.trust=clamp(state.mama.trust+1);save();}
+  };
+ }
+ if(adventure?.day!==state.day)return;
  const tell=document.createElement('button');
  tell.className='v5Choice';tell.textContent='Tell Mama what happened today';
  $('modalBody').querySelector('.v4OptionStack')?.append(tell);
@@ -155,6 +203,10 @@ v5OpenConversation=function(n){
  dialogueBubble=null;
  $('modalBackdrop').classList.add('woodland-talk');
  document.querySelector('#modalBody .v5DealReason p')?.remove();
+ if(n.mood==='UNWELL'&&n.lastUseDay===state.day){
+  const words=$('modalBody').querySelector('.v5DealReason p');
+  if(words)words.textContent='“I don’t feel right. I think I need to go home.”';
+ }
  if(['fern','pebble'].includes(n.id)){
   const clue=document.createElement('button');
   clue.className='v5Choice';clue.textContent='Ask about the Human Trail';
@@ -209,6 +261,9 @@ v5ClosePanel=function(){
 };
 document.querySelector('.v5PanelClose').onclick=()=>v5ClosePanel();
 window.addEventListener('keydown',event=>{
+ if(state?.trailCapture&&event.key==='Escape'&&$('modalBackdrop').classList.contains('open')){
+  event.preventDefault();event.stopImmediatePropagation();resolveTrailCapture(true);return;
+ }
  if(!tradeSession)return;
  if(event.key==='Escape'){
   event.preventDefault();event.stopImmediatePropagation();v5ClosePanel();
@@ -278,15 +333,23 @@ function recordDayAdventure(subject){
  state.dayAdventure={day:state.day,subject};
  log('Today’s adventure: '+subject+'.');
 }
-function finishDayAdventure(){
- if(state.dayAdventure?.day===state.day)return;
- const subject=randomOf([
-  'a fox calling from the trees just as Mama put out the fire',
-  'Fern finding everyone’s missing sticks in Pebble’s nest',
-  'a branch falling across the den entrance in the dark'
+function offerBedtimeAdventure(){
+ if(state.dayAdventure?.day===state.day)return false;
+ openModal('A noise at the den','<p>A branch cracks outside. Pebble sits up and looks at you.</p>',[
+  {text:'Check with Mama',action:()=>{
+   closeModal();recordDayAdventure('the fallen branch at the den');
+   state.mama.memories.unshift('D'+state.day+': We checked the fallen branch together.');
+   v5Sleep();
+  }},
+  {text:'Stay close to Pebble',action:()=>{
+   closeModal();recordDayAdventure('the noise that frightened Pebble');
+   const pebble=state.npcs.find(n=>n.id==='pebble');
+   pebble.rel=clamp(pebble.rel+1,-6,10);
+   v5Sleep();
+  }}
  ]);
- recordDayAdventure(subject);
- state.mama.memories.unshift('D'+state.day+': We all heard about '+subject+'.');
+ $('modalBackdrop').classList.add('woodland-talk');
+ return true;
 }
 const dayOldLoot=selectedRarityLoot;
 selectedRarityLoot=function(area,playerSearch=false){
@@ -297,6 +360,8 @@ const dayPreviousObject=interactObject;
 const dayContinue=v4Continue;
 v4Continue=function(){
  dayContinue();
+ drawPortrait($('logoBear'),cubAppearance(state.avatar));
+ if(state.trailCapture)showTrailCapture();
  if(state.dead&&['road','river','poacher'].includes(state.deathCause)){
   paused=true;
   const message={river:'Silverfin’s current pulled your cub under.',road:'A passing car struck your cub at the Human Trail.',poacher:'A poacher shot your cub near the Human Trail.'};
@@ -356,6 +421,29 @@ interactObject=function(action,spot){
  }
  return dayPreviousObject(action,spot);
 };
+
+function drawScene(){
+ worldDrawV3();
+ drawMovementScenery();
+ drawPlacedAmenities();
+ drawFamilyAndHazards();
+ drawActionEffects();
+ drawTransferEffects();
+ drawAmenityActivity();
+ drawPhysicalEncounters();
+ drawDayInteractions();
+}
+
+function render(){
+ renderTradingCore();
+ renderCare();
+ renderLocation();
+ renderTutorial();
+ renderDayDetails();
+ renderNearbyHelp();
+ renderNeeds();
+ renderSceneAccessibility();
+}
 
 load();drawPortrait($('logoBear'),cubAppearance(state.avatar));render();requestAnimationFrame(animate);opening();
 })();

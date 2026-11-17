@@ -93,9 +93,43 @@ def day_replay(page):
     page.locator("#v5Rest").click()
     page.get_by_role("button",name="CURL UP AND SLEEP").click()
     assert state(page)["day"] > before["day"]
+    print("Day 1: Fern’s clue, trade, parked car, and Mama’s response",flush=True)
+
+    travel(page,"trail")
+    click_world(page,290,350)
+    page.wait_for_function("LittleTradingPost.getState().dayAdventure?.day === LittleTradingPost.getState().day")
+    discovery=state(page)["dayAdventure"]["subject"]
+    assert discovery!="the parked car"
+    travel(page,"den")
+    click_world(page,563,242)
+    page.get_by_role("button",name="Tell Mama what happened today").click()
+    assert state(page)["dayAdventure"]["told"]=="mama"
+    page.get_by_role("button",name="BACK TO THE DEN").click()
+    page.locator("#v5Rest").click()
+    page.get_by_role("button",name="CURL UP AND SLEEP").click()
+    assert state(page)["day"]==before["day"]+2
+    print("Day 2: "+discovery+"; told Mama and slept",flush=True)
+
+    page.locator("#v5Rest").click()
+    page.get_by_role("button",name="CURL UP AND SLEEP").click()
+    page.get_by_role("button",name="Stay close to Pebble").click()
+    assert state(page)["dayAdventure"]["subject"]=="the noise that frightened Pebble"
+    page.get_by_role("button",name="CURL UP AND SLEEP").click()
+    assert state(page)["day"]==before["day"]+3
+    print("Day 3: chose to stay with Pebble after hearing a noise at the den",flush=True)
 
 
 def river_replay(page):
+    rescue=state(page)
+    rescue.update(location="river",playerPos=[540,401])
+    rescue["needs"].update(energy=10,health=80)
+    assert page.evaluate("(s) => LittleTradingPost.importSave(s)",rescue)
+    page.get_by_role("button",name="Take Fern’s paw").click()
+    assert state(page)["location"]=="den" and not state(page)["dead"]
+    position=state(page)["playerPos"]
+    page.keyboard.down("a")
+    page.wait_for_function("x => LittleTradingPost.getState().playerPos[0]<x",arg=position[0]-3)
+    page.keyboard.up("a")
     for health in (80,20):
         save=state(page)
         save.update(location="river",playerPos=[390,401])
@@ -112,6 +146,35 @@ def river_replay(page):
     assert state(page)["location"]=="den" and not state(page)["dead"]
 
 
+def rare_discoveries(page):
+    baseline=state(page)
+    for seed, item in ((1000,"trailSweets"),(4000,"glassPipe")):
+        save=deepcopy(baseline)
+        save.update(location="trail",playerPos=[307,377],rand=seed,dayAdventure=None)
+        assert page.evaluate("(s) => LittleTradingPost.importSave(s)",save)
+        click_world(page,290,350)
+        page.wait_for_function("item => LittleTradingPost.getState().inv[item]>0",arg=item)
+    save=deepcopy(baseline)
+    save.update(location="woods",playerPos=[552,309],rand=64000,dayAdventure=None)
+    assert page.evaluate("(s) => LittleTradingPost.importSave(s)",save)
+    click_world(page,535,282)
+    page.wait_for_function("LittleTradingPost.getState().dayAdventure?.subject.includes('fallen log')")
+    save=deepcopy(baseline)
+    save.update(location="trail",playerPos=[307,377],rand=64000)
+    save["orphan"]["status"]="mama"
+    save["dayAdventure"]={"day":save["day"],"subject":"the fresh boot prints"}
+    assert save["trailClue"]
+    assert page.evaluate("(s) => LittleTradingPost.importSave(s)",save)
+    click_world(page,290,350)
+    page.wait_for_function("LittleTradingPost.getState().inv.vape>0")
+    travel(page,"den")
+    click_world(page,563,242)
+    page.get_by_role("button",name="Tell Mama what happened today").click()
+    expect(page.locator("#modalBody")).to_contain_text("vape")
+    page.screenshot(path=OUT/"rare-vape-at-home.png")
+    page.get_by_role("button",name="BACK TO THE DEN").click()
+
+
 def human_risk_replay(page):
     for seed, outcome in ((1,"rescue"),(64000,"poacher")):
         save=state(page)
@@ -122,6 +185,9 @@ def human_risk_replay(page):
         page.get_by_role("button",name="Look closer").click()
         if outcome=="rescue":
             page.get_by_role("button",name="Call to Mama").click()
+            page.reload()
+            page.locator("#v5Continue").click()
+            page.get_by_role("button",name="Go to Mama").click()
             assert state(page)["location"]=="den"
         else:
             assert state(page)["deathCause"]=="poacher"
@@ -151,6 +217,8 @@ if __name__ == "__main__":
                 print("PASS: fresh-save day replay",flush=True)
                 river_replay(page)
                 print("PASS: seeded Silverfin survival and death",flush=True)
+                rare_discoveries(page)
+                print("PASS: seeded edibles, bong, body and vape discovery",flush=True)
                 human_risk_replay(page)
                 print("PASS: seeded Human Trail rescue and poacher death",flush=True)
                 assert not errors, errors

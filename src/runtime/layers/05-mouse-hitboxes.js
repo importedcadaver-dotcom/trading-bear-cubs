@@ -62,7 +62,7 @@ function v51RouteTo(dest){
 function v4Blocked(x,y){if(x<32||x>738||y<133||y>411)return true;if(state.location==='den'&&x>399&&x<522&&y>267&&y<311)return true;if(state.location==='post'&&x>125&&x<272&&y>285&&y<347)return true;return false;}
 function v4MotionFrame(ms){if(!state||v4MenuIsOpen||v4CreatorIsOpen||paused||state.dead||mapOpen||$('modalBackdrop').classList.contains('open'))return;if(!v4LastFrame)v4LastFrame=ms;const dT=Math.min(.06,(ms-v4LastFrame)/1000||.016);v4LastFrame=ms;
  let dx=(v4Keys.has('d')||v4Keys.has('arrowright')?1:0)-(v4Keys.has('a')||v4Keys.has('arrowleft')?1:0),dy=(v4Keys.has('s')||v4Keys.has('arrowdown')?1:0)-(v4Keys.has('w')||v4Keys.has('arrowup')?1:0);
- if(v4AutoPoint&&(dx||dy)){v4AutoPoint=null;v51Waypoints=[];}
+ if(v4AutoPoint&&(dx||dy)){cancelWalkTarget();}
  if(v4AutoPoint&&!dx&&!dy){
  const wp=v51Waypoints.length?v51Waypoints[0]:v4AutoPoint;
  const vx=wp[0]-state.playerPos[0],vy=wp[1]-state.playerPos[1],len=Math.hypot(vx,vy);
@@ -82,10 +82,16 @@ function v4InteractNearest(){if(state.dead||v4MenuIsOpen||mapOpen)return;const n
 world.addEventListener('click',e=>{if(mapOpen||paused||v4MenuIsOpen||v4CreatorIsOpen||state.dead||$('modalBackdrop').classList.contains('open'))return;const point=v51CanvasPoint(world,e);if(!point)return;const {x,y}=point;const hotspot=worldHotspots.map(o=>({...o,d:Math.hypot(x-o.x,y-o.y)})).filter(o=>o.d<(o.r||38)).sort((a,b)=>a.d-b.d)[0];moveSteps=[];pendingInteraction=null;if(hotspot?.kind==='object'){v4AutoPoint=[clamp(hotspot.x+17,35,733),clamp(hotspot.y+27,135,407),()=>interactObject(hotspot.id,hotspot)];}else if(hotspot?.kind==='npc'){v4AutoPoint=[clamp(hotspot.x+(hotspot.x<state.playerPos[0]?42:-42),35,733),clamp(hotspot.y+26,135,407),()=>showCubChoices(hotspot.id)];}else if(hotspot?.kind==='mama'){v4AutoPoint=[510,260,()=>{v4CompleteStep('mama');v5MamaConversation();}];}else if(hotspot?.kind==='orphan'){v4AutoPoint=[405,355,()=>v4OrphanDialogue()];}else if(hotspot?.kind==='trader'){v4AutoPoint=[590,357,()=>v4ShowTrader()];}else v4AutoPoint=[clamp(x,35,733),clamp(y,135,407)];
  if(!v51RouteTo(v4AutoPoint)){v4AutoPoint=null;notify('No safe path to that spot. Try moving nearer or around the obstacle.');}
  e.stopImmediatePropagation();},true);
+function cancelWalkTarget(){
+ const interaction=!!v4AutoPoint?.[2];
+ v4AutoPoint=null;v51Waypoints=[];
+ if(interaction)notify('Interaction canceled.');
+}
 function v4KeysHandler(e){if(e.key==='Tab'&&$('modalBackdrop').classList.contains('open'))return;if(['input','textarea','select'].includes(document.activeElement?.tagName?.toLowerCase()))return;if(v4MenuIsOpen||v4CreatorIsOpen)return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift','e','i','m','tab','escape',' '].includes(key)){e.preventDefault();e.stopImmediatePropagation();}if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(key)){v4Keys.add(key);moveSteps=[];}if(e.repeat)return;
- if(key==='e')v4InteractNearest();if(key==='i')openBackpack();if(key==='m')mapOpen?closeMap():showWorldMap();if(key==='tab')v4ShowMore();if(key==='escape'){if(mapOpen)closeMap();else if($('modalBackdrop').classList.contains('open'))closeModal();else v4PauseMenu();}if(key===' '&&v4FishingActive)v4ReelFish();}
+ if(key==='e')v4InteractNearest();if(key==='i')openBackpack();if(key==='m')mapOpen?closeMap():showWorldMap();if(key==='tab')v4ShowMore();if(key==='escape'){if(v4AutoPoint){cancelWalkTarget();return;}if(mapOpen)closeMap();else if($('modalBackdrop').classList.contains('open'))closeModal();else v4PauseMenu();}if(key===' '&&v4FishingActive)v4ReelFish();}
 document.addEventListener('keydown',v4KeysHandler,true);document.addEventListener('keyup',e=>{v4Keys.delete(e.key.toLowerCase());},true);window.addEventListener('blur',()=>v4Keys.clear());
-const v4OldDrawScene=drawScene;drawScene=function(){v4OldDrawScene();if(!state||mapOpen)return;const c=ctx,ms=performance.now();
+function drawMovementScenery(){
+ if(!state||mapOpen)return;const c=ctx,ms=performance.now();
  if(state.location==='trail')v4DrawCars(c,ms);if(state.location==='trail'&&v4TraderHere()){v5DrawPanda(c,592,308,animationTime);textTag(c,'WANDERING TRADER',592,236);worldHotspots.push({kind:'trader',x:592,y:308,r:55,id:'trader'});}if(state.location==='trail'&&state.orphan.status==='found'){v5DrawNewborn(c,405,321,1.2);textTag(c,'NEWBORN CUB!',405,275);worldHotspots.push({kind:'orphan',x:405,y:321,r:44,id:'orphan'});}
  if(state.orphan.status==='carried'){v5DrawNewborn(c,state.playerPos[0]+19,state.playerPos[1]+15,.65);}
  for(const pin of state.pins.filter(p=>p.loc===state.location)){rect(c,pin.x-18,pin.y-12,36,23,pin.id==='birdhouse'?'#976d47':'#c8b083');rect(c,pin.x-13,pin.y-8,26,7,pin.id==='birdhouse'?'#f0ca79':'#e8db9b');}
@@ -117,6 +123,19 @@ function v4CheckWater(dt){
   return;
  }
  state.playerPos=[x<410?153:654,382];
+ if(x>=500&&state.location==='river'){
+  openModal('A paw on the bank','<p>Fern sees you scramble out of the current. She holds out a paw.</p>',[
+   {text:'Take Fern’s paw',action:()=>{
+    closeModal();
+    travel('den',true);
+    recordDayAdventure('Fern pulling you to safety at Silverfin');
+    state.mama.memories.unshift('D'+state.day+': Fern brought you home from Silverfin.');
+    notify('Fern helped you home · you can move again');
+    save();render();
+   }},
+   {text:'Rest on the bank',secondary:true,action:closeModal}
+  ]);
+ }
  log('Silverfin swept you downstream. You reached the bank injured and exhausted.');
  say('you','I made it to the bank. I need to rest.');
  notify('Swept downstream · reached the bank · lost '+injury+' health');
