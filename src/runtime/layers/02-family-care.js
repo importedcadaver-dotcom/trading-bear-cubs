@@ -109,9 +109,9 @@ const phaseNames=['MORNING','AFTERNOON','EVENING','NIGHT'];
 const phaseCosts=[3,4,3,2];
 const maxV=100;
 const clamp=(v,a=0,b=100)=>Math.min(b,Math.max(a,v));
-const oldFresh=fresh,oldLoad=load,oldRender=render,oldRenderJournal=renderJournal,oldNpcTrade=npcTrade,
- oldDrawItem=drawItem,oldBear=bear,oldDrawStall=drawStall,oldDrawScene=drawScene,
- oldBuildCraft=buildCraft,oldNegotiate=negotiate,oldEvent=event;
+const oldFresh=fresh,oldLoad=load,oldRenderJournal=renderJournal,oldNpcTrade=npcTrade,
+ oldDrawItem=drawItem,oldBear=bear,
+ oldBuildCraft=buildCraft,oldEvent=event;
 function ensureV2(s){
  if(s.v2===2)return s;
  s.v2=2;s.phase=0;s.phaseActs=0;s.needs={food:84,water:83,energy:86,comfort:72,health:100};
@@ -315,7 +315,7 @@ function forageZone(id){
  if(!canAct(zones[id].cost))return;
  if(count(state.inv)>=capacity())return notify('Your backpack is full.');
  state.foraged++;state.zoneTrips[id]++;state.pool[id]--;state.totalFound++;
- let idItem=state.v3?selectedRarityLoot(id):randomOf(zones[id].loot);
+ let idItem=state.v3?selectedRarityLoot(id,true):randomOf(zones[id].loot);
  if(!state.v3&&id==='trail'&&idItem==='vape'&&!(state.day>=6&&state.rep>=8&&rng()<.06))idItem=randomOf(zones[id].loot.filter(t=>t!=='vape'));
  if(id==='stream'&&idItem==='freshfish'&&!amount('fishingrod')&&!state.upgrades.includes('bridge')&&rng()<.5)idItem='clay';
  if(id==='logs'&&amount('shovel')&&rng()<.2)idItem='quartz';
@@ -354,14 +354,13 @@ itemVal=function(n,id){
  return Math.max(1,v);
 };
 // The player must own rights to their own stall; solo trades are possible, but at the clearing fee applies to visitors.
-const baseNegotiate=negotiate;
-negotiate=function(){
+function settlePostBarter(){
  if(phase()===3)return notify('It is night. The trading table is closed.');
  if(state.day<=state.closedUntil)return notify('Mama closed the stall for your recovery this morning.');
  if(!entry(npc())){notify(npc().name+' will only trade off-site right now. Adjust your market policy.');render();return;}
  if(!canAct(3))return;
  const before=state.trades,beforeRep=state.rep,name=npc().id,dealCount=state.dailyDeals[name]||0;
- baseNegotiate();if(state.trades>before){
+ settleBaseBarter();if(state.trades>before){
   state.dailyDeals[name]=dealCount+1;
   if(dealCount>=2){state.rep=beforeRep;log('Repeat trades with the same cub are still useful, but no longer earn daily reputation.');}
   actionCost(3);setPose('chat');save();render();}
@@ -389,7 +388,7 @@ function foodUse(id){
  else{const [n,c]=food[id]||[8,0];state.needs.food=clamp(state.needs.food+n);state.needs.comfort=clamp(state.needs.comfort+c)}
  add(state.inv,id,-1);setPose('eat');log(`You ${id==='water'?'drank':'ate'} ${items[id].name.toLowerCase()}. You feel better.`);notify('Yum! Your needs improved.');tick();
 }
-function itemAction(id,what){
+function useInventoryItem(id,what){
  if(!amount(id))return notify('You no longer have that item.');
  const dangerous=id==='vape';
  if(what==='examine'){openModal('Inspect: '+items[id].name,`<p>${h(items[id].desc)}</p><p><b>Category:</b> ${h(items[id].category||'Treasure')}<br><b>In your bag:</b> ${amount(id)}<br><b>Your stall value:</b> varies by the cub who wants it.</p>`,[{text:'CLOSE',action:closeModal}]);return;}
@@ -558,6 +557,10 @@ function newBear(c,x,y,scale,n,t=0){
  pxEllipse(c,0,11,16,17,dark,2);pxEllipse(c,0,9,14,17,fur,2);
  pxEllipse(c,-14,16,8,9,dark,2);pxEllipse(c,14,16,8,9,dark,2);
  pxEllipse(c,-10,24,9,6,dark,2);pxEllipse(c,10,24,9,6,dark,2);
+ if(n.markings==='pale chest')pxEllipse(c,0,17,7,8,'#e6c89d',2);
+ if(n.markings==='dark paws'){
+  pxEllipse(c,-10,23,7,4,'#392b28',1);pxEllipse(c,10,23,7,4,'#392b28',1);
+ }
  for(const d of [-17,-13,-9,5,9,13]){rect(c,d,26,2,2,'#4b3b31')}
  // Ear placement is round and high/sideways, not long pointy canine ears.
  pxEllipse(c,-13,-18,8,8,dark,2);pxEllipse(c,13,-18,8,8,dark,2);
@@ -565,20 +568,36 @@ function newBear(c,x,y,scale,n,t=0){
  pxEllipse(c,0,-5,21,19,dark,2);pxEllipse(c,0,-6,19,18,fur,2);
  // Tiny eyebrow highlights and round inset eyes.
  rect(c,-11,-12,6,2,'#c9966f');rect(c,5,-12,6,2,'#c9966f');
- pxEllipse(c,-8,-8,3,4,'#282927',1);pxEllipse(c,8,-8,3,4,'#282927',1);
- rect(c,-9,-10,1,2,'#f9e6c7');rect(c,7,-10,1,2,'#f9e6c7');
+ const eyeColor={amber:'#b77529',brown:'#784530'}[n.eyes]||'#282927';
+ const eyeWidth=n.eyeShape==='round'?4:3,eyeHeight=n.eyeShape==='sleepy'?2:4;
+ for(const eyeX of [-8,8]){
+  pxEllipse(c,eyeX,-8,eyeWidth,eyeHeight,eyeColor,1);
+  rect(c,eyeX-1,-8-(eyeHeight>2?2:0),1,eyeHeight>2?2:1,'#f9e6c7');
+ }
  // Very short bear muzzle, NOT elongated or projecting dog snout.
- pxEllipse(c,0,2,11,7,'#d5ae82',2);pxEllipse(c,0,0,5,3,'#493a33',1);
+ pxEllipse(c,0,2,11,7,n.markings==='cream muzzle'?'#efd0a4':'#d5ae82',2);pxEllipse(c,0,0,5,3,'#493a33',1);
+ if(n.markings==='freckled snout'){
+  for(const dx of [-8,-5,5,8])rect(c,dx,2+(Math.abs(dx)===8?1:0),1,1,'#80533d');
+ }
  rect(c,-1,3,2,3,'#60443b');rect(c,-3,6,6,2,'#60443b');
  if(pose==='eat'){rect(c,-3,4,7,4,'#3b302c');rect(c,2,3,4,3,'#bb6072')}
  if(pose==='vape'){rect(c,-2,7,5,4,'#3d332d');rect(c,11,7,4,13,'#83979f');rect(c,12,8,2,3,'#d5d4cf')}
  // Shoulder fur patches and tiny scarfs.
- rect(c,-12,11,24,3,n.scarf||'#e0b66f');rect(c,6,14,4,7,n.scarf||'#e0b66f');
+ if(n.accessory!=='none'){
+  rect(c,-12,11,24,3,n.scarf||'#e0b66f');rect(c,6,14,4,7,n.scarf||'#e0b66f');
+ }
  if(pose==='proud'){rect(c,-4,-30,8,4,'#edbf77');rect(c,-2,-35,4,5,'#edbf77')}
  if(pose==='play'||pose==='wrestle') {pxEllipse(c,-17,7,7,7,fur,2);pxEllipse(c,17,8,7,7,fur,2)}
  c.restore();
 }
 bear=function(c,x,y,scale,n,t=0){newBear(c,x,y,scale,n,t)};
+function cubAppearance(avatar={},activity='idle'){
+ return {
+  skin:avatar.coat||'#a9764c',ear:avatar.ears||'#714734',age:11,activity,
+  scarf:avatar.accessory==='red ribbon'?'#bc6c62':avatar.accessory==='blue bandana'?'#6e9cb6':'#d4af66',
+  accessory:avatar.accessory,markings:avatar.markings,eyes:avatar.eyes,eyeShape:avatar.eyeShape
+ };
+}
 // Generic small icons share a consistent pixel grid and 4-tone palette with baseline art.
 drawItem=function(canvas,id){if(!EXTRA_ITEMS[id])return oldDrawItem(canvas,id);
  const c=canvas.getContext('2d');c.clearRect(0,0,24,24);c.imageSmoothingEnabled=false;
@@ -625,33 +644,8 @@ function drawAmenity(c,id,x,y){
  }
 }
 const amenityPositions=[[349,167],[461,181],[546,198],[626,270],[340,278],[550,312],[396,301],[662,348],[68,215],[692,247],[356,379],[34,325],[584,377],[444,120]];
-const baseDrawScene=drawScene;
-drawScene=function(){baseDrawScene();const c=ctx;
- const construction=upgrades.filter(u=>state.upgrades.includes(u.id)&&extraUpgrades.some(e=>e.id===u.id));
- construction.forEach((u,i)=>{if((state.v5Builds||[]).some(b=>b.id===u.id))return;let idx=extraUpgrades.findIndex(e=>e.id===u.id),[x,y]=amenityPositions[idx];drawAmenity(c,u.id,x,y);
-  // Visual buildings have no floating word labels, keeping the crowded forest legible.
- });
- // Proud displayed stock, drawn as actual objects behind the counter.
- let offset=0;for(const id of Object.keys(state.displayed).filter(k=>state.displayed[k]>0)){
-  const cv=document.createElement('canvas');cv.width=cv.height=24;drawItem(cv,id);c.drawImage(cv,110+offset*32,230,27,27);offset++;
- }
- // Mama is physically present near the path at evening/night and never vanishes from the story.
- if(phase()===0||phase()>=2){bear(c,715,291,1.45,{skin:'#7f513a',ear:'#553b31',scarf:'#d1ab70',age:32,activity:'watching'},animationTime);
-  rect(c,673,226,87,16,'#ffefc8');c.font='bold 11px monospace';c.textAlign='center';c.fillStyle='#394735';c.fillText('MAMA BEAR',718,237);
- }
- // Show vapor as a visible short-lived cloud only when the unsafe artifact was used.
- if(state.pose==='vape'&&Date.now()<state.poseUntil){
-  for(const p of specialParticles){p.age+=.8;const dy=p.age*.7;const xx=p.x+Math.sin(p.age/8)*7;
-    if(p.age<70){c.fillStyle=p.age%3>1?'#e0dacf':'#c0d2c9';c.fillRect(xx,p.y-dy,5+Math.floor(p.age/11),3+Math.floor(p.age/15));}}
- }
- if(state.pose&&Date.now()>state.poseUntil)state.pose='idle';
- // Distinguish day phases visually in the canvas itself; not CSS only.
- if(phase()===3){c.fillStyle='#12284452';c.fillRect(0,0,768,434);
-   c.fillStyle='#f4dc91';c.fillRect(686,20,12,12);for(let i=0;i<15;i++){let x=(i*97+37)%768,y=(i*43+21)%150;c.fillStyle='#f3dca5';c.fillRect(x,y,2,2)}}
- else if(phase()===2){c.fillStyle='#d99d5e25';c.fillRect(0,0,768,434)}
-};
-// Decoration and player actor pose: original base sprite receives the richer bear drawing.
-render=function(){oldRender();renderV2()};
+function renderCare(){
+ renderV2()};
 renderJournal=function(){oldRenderJournal();const hint=$('tab-journal').querySelector('.quest');if(hint){hint.querySelector('b').textContent='✦ GROW A WOODLAND LANDMARK';$('questText').textContent=`${state.rep}/25 reputation · ${state.trades}/12 trades · ${state.upgrades.length}/6 structures${state.victory?' · MILESTONE COMPLETE':''}`;}
  const paras=$('tab-journal').querySelectorAll('p');for(const p of paras){if(p.textContent.includes('sealed human vape'))p.innerHTML='Some cubs whisper of the <b>mythical human vape</b>. It can be found on the trail very rarely, examined, hidden, displayed or used. Using it triggers visible vapor, coughing, declining health, dependence risk and Mama’s concern; it is never a health or economic power-up.';}
  const countEl=$('discoveryCount');countEl.textContent=state.npcs.filter(n=>n.discovered).length+'/6 SECRETS';

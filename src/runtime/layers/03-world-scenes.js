@@ -8,7 +8,7 @@ const WORLD={
  woods:{name:'Deep Woodland',short:'Woodland',x:450,y:96,color:'#658e72',links:['post','pebble','river','trail','playground'],cost:2,objects:[['Fallen old log',535,282,'logs'],['Berry bushes',205,286,'grove'],['Hollow stump',352,192,'hide']]},
  playground:{name:'Cubs’ Playground',short:'Playground',x:538,y:270,color:'#aec38f',links:['post','woods','rival'],cost:1,objects:[['Wrestling patch',403,301,'play'],['Swinging branch',598,230,'play'],['Resting bench',169,290,'rest']]},
  rival:{name:"Moss's Rival Market",short:'Rival market',x:649,y:320,color:'#b79c71',links:['post','playground','trail'],cost:1,objects:[['Moss’s sales table',279,265,'rival'],['Rumor sign',566,214,'notice'],['Public meeting spot',497,332,'play']]},
- trail:{name:'Forgotten Human Trail',short:'Human trail',x:635,y:110,color:'#a6a18a',links:['woods','river','rival'],cost:2,objects:[['Littered picnic spot',290,290,'trail'],['Old signpost',567,230,'notice'],['Bramble hiding place',465,355,'hide']]}
+ trail:{name:'Human Trail',short:'Human trail',x:635,y:110,color:'#a6a18a',links:['woods','river','rival'],cost:2,objects:[['Littered picnic spot',290,350,'trail'],['Boot prints by the sign',567,176,'humanTracks'],['Bramble hiding place',465,355,'hide'],['Parked car',640,380,'parkedCar']]}
 };
 const TIERS=[['common',50],['uncommon',27],['rare',14],['epic',6],['legendary',2.5],['mythic',.5]];
 const raritySets={uncommon:['feather','shell','button','fish','freshfish','wood','rope','clay','driedfish','water','apple','basket','ball','boat','cup','pinecone','wovenmat'],rare:['stone','quartz','marble','thimble','bell','jam','meal','dice','crown','drum','necklace','paintedstone','lantern','shovel','fishingrod','map','kite','birdhouse'],epic:['amber','compass','key','postcard','sticker','ticket'],legendary:['fishstone']};
@@ -21,7 +21,7 @@ const MYTHIC_VARIANTS={
 for(const [id,[name,color,desc]]of Object.entries(MYTHIC_VARIANTS)){items[id]={name,short:name.toLowerCase(),plural:name+'s',color,desc,category:'Human',usage:'artifact',rarity:'mythic'};base[id]=39;}
 const VAPES=new Set(['vape',...Object.keys(MYTHIC_VARIANTS)]);
 const rareItems=Object.keys(items).filter(id=>['rare','epic','legendary','mythic'].includes(items[id].rarity));
-const origin={post:[193,346],den:[348,326],pebble:[344,322],river:[310,243],woods:[385,330],playground:[360,325],rival:[363,315],trail:[320,344]};
+const origin={post:[193,346],den:[348,326],pebble:[344,322],river:[155,270],woods:[385,330],playground:[360,325],rival:[363,315],trail:[320,344]};
 const scenesDefault={fern:'den',pebble:'den',waffle:'post',juniper:'woods',sprout:'playground',moss:'rival'};
 let mapOpen=false,worldHotspots=[],lastTalk='',dialogueBubble=null,moveSteps=[],playerMoving=false,pendingInteraction=null,activeSearch='all',lastRarityResult='';
 function ensureV3(s){
@@ -59,6 +59,7 @@ function scheduleV3(){
    if(n.id==='waffle')desired=ph===3?'playground':ph<=1?'post':'playground';
    if(n.id==='sprout')desired=ph===3?'playground':ph===1&&day%2===0?'post':'playground';
    if(n.id==='juniper')desired=ph===3?'woods':ph===1&&day%9===0?'trail':ph===1&&day%2===0?'post':'woods';
+   if(phase()!==3&&v54MouseVisitsPost(n.id))desired='post';
    // First-time tutorial must not become impossible because a required cub left.
    // The eight approved steps stay unchanged; only NPC availability is guided.
    if(state.tutorial?.enabled&&!state.tutorial.completed){
@@ -95,22 +96,20 @@ const previousNpcTradeV3=npcTrade;
 npcTrade=function(){const pairs=[];for(const a of state.npcs)for(const b of state.npcs)if(a.id<b.id&&a.location===b.location&&WORLD[a.location])for(const x of Object.keys(a.inv).filter(k=>quantity(a.inv,k)>0&&!a.reservedInv[k]))for(const y of Object.keys(b.inv).filter(k=>quantity(b.inv,k)>0&&!b.reservedInv[k]&&x!==k)){const sa=itemVal(a,y)-itemVal(a,x),sb=itemVal(b,x)-itemVal(b,y);if(sa>=-1&&sb>=-1&&sa+sb>=2)pairs.push({a,b,x,y,score:sa+sb})}
  if(!pairs.length)return false;pairs.sort((a,b)=>b.score-a.score);const d=pairs[Math.floor(rng()*Math.min(5,pairs.length))];const here=d.a.location==='post';if(here&&(!entry(d.a)||!entry(d.b))){log(`${d.a.name} and ${d.b.name} were denied access to your post and postponed their deal.`);return false;}
  add(d.a.inv,d.x,-1);add(d.b.inv,d.y,-1);add(d.a.inv,d.y,1);add(d.b.inv,d.x,1);d.a.deals++;d.b.deals++;log(`${d.a.name} and ${d.b.name} traded ${items[d.x].name} for ${items[d.y].name} at ${WORLD[d.a.location].name}.`);if(d.a.location===state.location)say(d.a.id,`Trade accepted, ${d.b.name}!`);return true;};
-const origNeogotiateV3=negotiate;
-negotiate=function(){const n=npc();if(Object.keys(wanted).some(k=>n.reservedInv[k])){say(n.id,`I'm keeping that treasure. It's not for sale.`);clearSelectionsOnly();render();return;}if(state.location!==n.location)return notify(`${n.name} is at ${WORLD[n.location].short}. Travel to meet them first.`);if(state.location!=='post'){
+function settleLocalBarter(){const n=npc();if(Object.keys(wanted).some(k=>n.reservedInv[k])){say(n.id,`I'm keeping that treasure. It's not for sale.`);clearSelectionsOnly();render();return;}if(state.location!==n.location)return notify(`${n.name} is at ${WORLD[n.location].short}. Travel to meet them first.`);if(state.location!=='post'){
  const a=count(offered),b=count(wanted);if(!a||!b)return notify('Pick items from both sides.');if(!canPay(state.inv,offered)||!canPay(n.inv,wanted))return notify('An item has moved. Refresh your trade.');if(count(state.inv)-a+b>capacity())return notify('Your bag is full.');const score=offerScore(n,offered,wanted)+n.rel*.85;
  if(score>=-1){spend(state.inv,offered);spend(n.inv,wanted);Object.entries(offered).forEach(([k,v])=>add(n.inv,k,v));Object.entries(wanted).forEach(([k,v])=>add(state.inv,k,v));n.rel=clamp(n.rel+1,-6,10);state.trades++;state.rep++;log(`Off-site barter with ${n.name} succeeded at ${WORLD[state.location].name}.`);say(n.id,'That seems fair to me!');}else{n.rel=clamp(n.rel-1,-6,10);say(n.id,"I won't accept that deal.");}clearSelectionsOnly();tick();return;
- }origNeogotiateV3();};
+ }settlePostBarter();};
 // Same extremely rare chance as v2 trail relic, but discovered specimens can have different fictional labels.
 const oldForageZoneV3=forageZone;
 forageZone=function(zone){const allowed={grove:['woods'],logs:['woods','pebble'],stream:['river'],trail:['trail']};if(!allowed[zone]?.includes(state.location))return notify(`To gather here, travel to ${WORLD[allowed[zone]?.[0]||'woods'].name} first.`);return oldForageZoneV3(zone);};
-const originalUseV3=itemAction;
-itemAction=function(id,action){if(state.dead)return notify('This cub cannot act after the story has ended.');if(VAPES.has(id)&&id!=='vape'&&action==='vape'){state.vapeUses++;state.dependence=clamp(state.dependence+5);state.needs.health=clamp(state.needs.health-12);state.needs.energy=clamp(state.needs.energy-9);state.mama.suspicion=clamp(state.mama.suspicion+15);setPose('vape',3400);specialParticles=Array.from({length:20},(_,i)=>({x:state.playerPos[0]+i%5*3,y:state.playerPos[1]-40,age:i*3}));log(`The cub used the dangerous ${items[id].name} device. A brief vapor animation, coughing and dizziness follow; health −12, energy −9.`);if(state.location==='den'){state.mama.trust=clamp(state.mama.trust-9);log('Mama witnessed the unsafe device and took disciplinary action.');}say('you','Cough! That was a terrible idea.');tick();return;}
+function useWorldItem(id,action){if(state.dead)return notify('This cub cannot act after the story has ended.');if(VAPES.has(id)&&id!=='vape'&&action==='vape'){state.vapeUses++;state.dependence=clamp(state.dependence+5);state.needs.health=clamp(state.needs.health-12);state.needs.energy=clamp(state.needs.energy-9);state.mama.suspicion=clamp(state.mama.suspicion+15);setPose('vape',3400);specialParticles=Array.from({length:20},(_,i)=>({x:state.playerPos[0]+i%5*3,y:state.playerPos[1]-40,age:i*3}));log(`The cub used the dangerous ${items[id].name} device. A brief vapor animation, coughing and dizziness follow; health −12, energy −9.`);if(state.location==='den'){state.mama.trust=clamp(state.mama.trust-9);log('Mama witnessed the unsafe device and took disciplinary action.');}say('you','Cough! That was a terrible idea.');tick();return;}
  if(action==='mama'&&state.location!=='den')return notify('You must visit Mama in her den to show her an item.');
  if(action==='hide'){const local=state.location==='post'?state.hidden:state.hiddenAt[state.location];if(count(local)>=4+(state.upgrades.includes('storage')?6:0))return notify('This hiding place is full.');add(state.inv,id,-1);add(local,id,1);state.mama.suspicion=clamp(state.mama.suspicion+(state.location==='den'?5:2));log(`You hid ${items[id].name} in a persistent cache at ${WORLD[state.location].name}.`);setPose('sneak',1700);say('you','Nobody will notice my little hiding spot...');tick();return;}
  if(action==='store'&&state.location!=='post')return notify('Your lockable storage is at your own trading post. Hide this here or travel back.');
- return originalUseV3(id,action);};
+ return useInventoryItem(id,action);};
 function talkAction(what){if(state.dead)return notify('This cub cannot act.');const n=npc();if(n.location!==state.location){say('you',`${n.name} isn't here. The map shows where to go.`);return;}
- const sib=['pebble','fern'].includes(n.id),secret=Object.keys(n.hiddenInv).find(k=>n.hiddenInv[k]>0),visible=Object.keys(n.inv).find(k=>n.inv[k]>0),courage={sprout:2,fern:3,pebble:6,waffle:4,juniper:7,moss:8}[n.id];let response='';
+ const sib=['pebble','fern'].includes(n.id),secret=Object.keys(n.hiddenInv).find(k=>n.hiddenInv[k]>0),visible=Object.keys(n.inv).find(k=>k!=='fernMouse'&&n.inv[k]>0),courage={sprout:2,fern:3,pebble:6,waffle:4,juniper:7,moss:8}[n.id];let response='';
  if(what==='chat'){response=sib?`We're littermates, you know! ${n.id==='pebble'?'You still owe me a wrestling rematch.':'Remember when Mama kept us warm?'}`:`I was ${n.activity} earlier. This forest is busy!`;n.rel=clamp(n.rel+0.25,-6,10);}
  if(what==='ask'){response=secret?(n.rel>7&&rng()<.35?`I secretly found ${items[secret].name}. Please keep it quiet!`:"I don't have any special treasures. Promise."):(visible?`I have ${items[visible].name}, yes. But it's mine.`:'I have nothing worth showing.');if(secret&&response.includes(items[secret].name))state.knownSecrets[n.id]=secret;}
  if(what==='persuade'){const chance=0.36+n.rel*.035+(sib?.13:0);if(rng()<chance&&visible){const good=visible;const cost=quantity(state.inv,'berry')>0?'berry':null;if(cost&&count(state.inv)<capacity()){add(state.inv,cost,-1);add(n.inv,cost,1);add(n.inv,good,-1);add(state.inv,good,1);response=`Okay. I'll exchange ${items[good].name} for a berry. Don't tell everyone!`;n.rel=clamp(n.rel+1,-6,10);}else response='Bring something to offer. Even siblings should trade fairly.';}else response="No, I really don't want to. Please respect that.";}
@@ -233,13 +232,13 @@ function worldDrawV3(){const c=ctx,t=animationTime,loc=state.location;if(!state)
  if(loc==='post'){drawTerrain(c,t);drawStall(c);const structures=upgrades.filter(u=>state.upgrades.includes(u.id)&&extraUpgrades.some(e=>e.id===u.id));structures.forEach(u=>{const index=extraUpgrades.findIndex(e=>e.id===u.id);if(amenityPositions[index])drawAmenity(c,u.id,...amenityPositions[index]);});}
  else drawSceneBackground(c,loc,t);
  for(const o of WORLD[loc].objects){if(loc!=='post'||o[3]!=='stall')drawObject(c,o);if(o[3]!=='stall')textTag(c,o[0],o[1],o[2]-45);worldHotspots.push({id:o[3],x:o[1],y:o[2],r:42,kind:'object'});}
- const found=state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between');for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;if(!n.travelPlan&&!n.physicalIntent&&Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
- if(!n.travelPlan&&!n.physicalIntent){n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;}
+ const found=state.npcs.filter(n=>n.location===loc&&n.travelPlan?.stage!=='between');for(const n of found){if(!n.worldPos)n.worldPos=[n.x||350,n.y||310];if(!n.worldTarget)n.worldTarget=n.worldPos.slice();const goal=n.worldTarget;const moving=!paused&&!$('modalBackdrop').classList.contains('open');if(moving&&!n.travelPlan&&!n.physicalIntent&&Math.hypot(goal[0]-n.worldPos[0],goal[1]-n.worldPos[1])<4&&Math.sin(t/29+n.age)>.97){const p=[clamp(n.worldPos[0]+Math.sin(t+n.age)*50,74,699),clamp(n.worldPos[1]+Math.cos(t+n.age)*22,205,370)];n.worldTarget=p;}
+ if(moving&&!n.travelPlan&&!n.physicalIntent){n.worldPos[0]+=(goal[0]-n.worldPos[0])*.09;n.worldPos[1]+=(goal[1]-n.worldPos[1])*.09;}
  const x=n.worldPos[0],y=n.worldPos[1];if(n.id===state.chosen){rect(c,x-24,y+29,48,4,'#f0cf75');}bear(c,x,y,1.1,n,t);textTag(c,n.name.toUpperCase(),x,y-40,n.id===state.chosen);worldHotspots.push({id:n.id,x,y,r:38,kind:'npc'});
  }
  if(loc==='den'){bear(c,563,242,1.8,{skin:'#80573d',ear:'#523b2e',scarf:'#cda66d',age:36,activity:'watching'},t);textTag(c,'MAMA',563,185);worldHotspots.push({id:'mama',x:563,y:243,r:61,kind:'mama'});}
  const p=state.playerPos,px=p[0],py=p[1];if(moveSteps.length){const to=moveSteps[0];const dx=to[0]-px,dy=to[1]-py,d=Math.hypot(dx,dy);if(d<7){state.playerPos=to;moveSteps.shift();playerMoving=false;if(!moveSteps.length&&pendingInteraction){const pending=pendingInteraction;pendingInteraction=null;queueMicrotask(()=>interactObject(pending.id,pending.spot));}}else{const speed=3.5;state.playerPos=[px+dx/d*speed,py+dy/d*speed];playerMoving=true;}}
- if(!state.dead)bear(c,px,py,1.13,{skin:state.avatar?.coat||'#a9764c',ear:state.avatar?.ears||'#714734',scarf:state.avatar?.accessory==='none'?(state.avatar?.coat||'#a9764c'):state.avatar?.accessory==='red ribbon'?'#bc6c62':state.avatar?.accessory==='blue bandana'?'#6e9cb6':'#d4af66',age:11,activity:playerMoving?'walk':state.pose},t);
+ if(!state.dead)bear(c,px,py,1.13,cubAppearance(state.avatar,playerMoving?'walk':state.pose),t);
  // The label is ABOVE the shop canopy, never on the cub's face.
  if(loc==='post')textTag(c,'★ YOUR POST ★',183,128,true);else textTag(c,'YOU',px,py-43,true);
  worldHotspots.push({id:'you',x:px,y:py,r:30,kind:'player'});
@@ -251,10 +250,9 @@ function worldDrawV3(){const c=ctx,t=animationTime,loc=state.location;if(!state)
  if(phase()===3){rect(c,0,0,768,434,'#13263838');for(let i=0;i<15;i++)rect(c,(i*83+27)%768,(i*39+19)%185,2,2,'#e9e3b9');}
  if(state.dead){rect(c,0,0,768,434,'#192b2bab');textTag(c,'THE LITTLE CUB DID NOT SURVIVE',375,211,true);}
 }
-drawScene=worldDrawV3;
+
 const oldSelectNPCV3=selectNPC;
 selectNPC=function(id){oldSelectNPCV3(id);if(state.npcs.find(n=>n.id===id)?.location===state.location){switchTab('dialogue');say(id,`Hi! What do you want to talk about?`);}else notify(`${npc().name} is away at ${WORLD[npc().location]?.short||'somewhere in the woods'}.`);};
-world.removeEventListener('click',pointerSelect);
 world.addEventListener('click',e=>{const r=world.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*768,y=(e.clientY-r.top)/r.height*434;const near=[...worldHotspots].map(o=>({...o,dist:Math.hypot(x-o.x,y-o.y)})).filter(o=>o.dist<o.r*1.18).sort((a,b)=>a.dist-b.dist)[0];
  if(mapOpen){if(near&&near.kind==='location')travel(near.id);else mapOpen=false;render();return;}
  if(!near){pendingInteraction=null;moveSteps=[[clamp(x,50,718),clamp(y,175,390)]];return;}
@@ -281,8 +279,8 @@ function interactObject(action,spot){const loc=state.location;switch(action){
  case 'stall':switchTab('post');say('you','My post. My rules.');break;
  default:say('you','I wonder what this does.');}
 }
-const oldRenderV3=render;
-render=function(){oldRenderV3();if(!state.v3)return;const loc=WORLD[state.location];document.querySelector('.worldLabel').textContent='✿ '+loc.name.toUpperCase();$('activeCubs').textContent=state.npcs.filter(n=>n.location===state.location).length;document.querySelector('.worldHelp').innerHTML=`<span>☞ <strong>${h(loc.name)}</strong> · Click the ground to walk, objects to use, or cubs to talk.</span><span><strong id="activeCubs">${state.npcs.filter(n=>n.location===state.location).length}</strong> cubs here · M: map · I: bag</span>`;
+function renderLocation(){
+ if(!state.v3)return;const loc=WORLD[state.location];document.querySelector('.worldLabel').textContent='✿ '+loc.name.toUpperCase();$('activeCubs').textContent=state.npcs.filter(n=>n.location===state.location).length;document.querySelector('.worldHelp').innerHTML=`<span>☞ <strong>${h(loc.name)}</strong> · Click the ground to walk, objects to use, or cubs to talk.</span><span><strong id="activeCubs">${state.npcs.filter(n=>n.location===state.location).length}</strong> cubs here · M: map · I: bag</span>`;
  $('forageBtn').disabled=state.location==='den'||state.dead;$('gossipBtn').disabled=state.dead;$('tradeBtn').disabled=state.dead||npc().location!==state.location;if(npc().location!==state.location){$('tradeHint').textContent=`${npc().name} is currently at ${WORLD[npc().location].name}. Travel there to trade or talk.`;$('tradeResult').textContent=`This cub is not physically at your location. Use the map to find them.`;}
  renderHotbar();renderTravelNav();if(activeTab==='dialogue')renderDialogue();if(activeTab==='history')renderFullHistory();
 };
