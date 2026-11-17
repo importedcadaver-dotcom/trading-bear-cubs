@@ -43,6 +43,9 @@ def select_creator_options(page):
 def day_replay(page):
     finish_pebble_objective(page)
     click_cub(page, "fern")
+    talking = state(page)
+    page.wait_for_timeout(500)
+    assert [n["worldPos"] for n in state(page)["npcs"]] == [n["worldPos"] for n in talking["npcs"]]
     page.get_by_role("button",name="Ask about the Human Trail").click()
     expect(page.locator("#modalBody")).to_contain_text("shiny mouthpiece")
     assert state(page)["trailClue"]
@@ -68,6 +71,11 @@ def day_replay(page):
     page.screenshot(path=OUT / "trade.png")
     page.locator("#tradeBtn").click()
     assert state(page)["trades"] == before["trades"] + 1
+    assert state(page)["inv"].get("stick",0) == before["inv"].get("stick",0)-1
+    after = state(page)
+    page.locator("#tradeBtn").dispatch_event("click")
+    assert state(page)["inv"] == after["inv"]
+    assert state(page)["trades"] == after["trades"]
     page.keyboard.press("Escape")
     travel(page, "trail")
     click_world(page,640,380)
