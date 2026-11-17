@@ -3021,6 +3021,11 @@ $('tradeBtn').addEventListener('click',event=>{
  if(wanted.fernMouse||SharedBarterRules.isNullBarter(offered,wanted)){
   negotiate();reviseWoodlandTrade();return;
  }
+ if(count(state.inv)-count(offered)+count(wanted)>capacity()){
+  reviseWoodlandTrade();
+  tradeResult('Your bag is full. Make room before accepting this offer.',false);
+  return notify('Your backpack is full. Make room before attempting the deal.');
+ }
  const reserved=Object.keys(wanted).find(id=>n.reservedInv?.[id]);
  if(reserved)return tradeResult(n.name+': “I’m keeping '+items[reserved].name.toLowerCase()+'. It matters to me.”',false);
  const opinion=tradeMood();
