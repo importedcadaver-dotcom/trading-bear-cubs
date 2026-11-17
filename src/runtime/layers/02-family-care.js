@@ -315,7 +315,7 @@ function forageZone(id){
  if(!canAct(zones[id].cost))return;
  if(count(state.inv)>=capacity())return notify('Your backpack is full.');
  state.foraged++;state.zoneTrips[id]++;state.pool[id]--;state.totalFound++;
- let idItem=state.v3?selectedRarityLoot(id):randomOf(zones[id].loot);
+ let idItem=state.v3?selectedRarityLoot(id,true):randomOf(zones[id].loot);
  if(!state.v3&&id==='trail'&&idItem==='vape'&&!(state.day>=6&&state.rep>=8&&rng()<.06))idItem=randomOf(zones[id].loot.filter(t=>t!=='vape'));
  if(id==='stream'&&idItem==='freshfish'&&!amount('fishingrod')&&!state.upgrades.includes('bridge')&&rng()<.5)idItem='clay';
  if(id==='logs'&&amount('shovel')&&rng()<.2)idItem='quartz';
@@ -558,6 +558,10 @@ function newBear(c,x,y,scale,n,t=0){
  pxEllipse(c,0,11,16,17,dark,2);pxEllipse(c,0,9,14,17,fur,2);
  pxEllipse(c,-14,16,8,9,dark,2);pxEllipse(c,14,16,8,9,dark,2);
  pxEllipse(c,-10,24,9,6,dark,2);pxEllipse(c,10,24,9,6,dark,2);
+ if(n.markings==='pale chest')pxEllipse(c,0,17,7,8,'#e6c89d',2);
+ if(n.markings==='dark paws'){
+  pxEllipse(c,-10,23,7,4,'#392b28',1);pxEllipse(c,10,23,7,4,'#392b28',1);
+ }
  for(const d of [-17,-13,-9,5,9,13]){rect(c,d,26,2,2,'#4b3b31')}
  // Ear placement is round and high/sideways, not long pointy canine ears.
  pxEllipse(c,-13,-18,8,8,dark,2);pxEllipse(c,13,-18,8,8,dark,2);
@@ -565,20 +569,36 @@ function newBear(c,x,y,scale,n,t=0){
  pxEllipse(c,0,-5,21,19,dark,2);pxEllipse(c,0,-6,19,18,fur,2);
  // Tiny eyebrow highlights and round inset eyes.
  rect(c,-11,-12,6,2,'#c9966f');rect(c,5,-12,6,2,'#c9966f');
- pxEllipse(c,-8,-8,3,4,'#282927',1);pxEllipse(c,8,-8,3,4,'#282927',1);
- rect(c,-9,-10,1,2,'#f9e6c7');rect(c,7,-10,1,2,'#f9e6c7');
+ const eyeColor={amber:'#b77529',brown:'#784530'}[n.eyes]||'#282927';
+ const eyeWidth=n.eyeShape==='round'?4:3,eyeHeight=n.eyeShape==='sleepy'?2:4;
+ for(const eyeX of [-8,8]){
+  pxEllipse(c,eyeX,-8,eyeWidth,eyeHeight,eyeColor,1);
+  rect(c,eyeX-1,-8-(eyeHeight>2?2:0),1,eyeHeight>2?2:1,'#f9e6c7');
+ }
  // Very short bear muzzle, NOT elongated or projecting dog snout.
- pxEllipse(c,0,2,11,7,'#d5ae82',2);pxEllipse(c,0,0,5,3,'#493a33',1);
+ pxEllipse(c,0,2,11,7,n.markings==='cream muzzle'?'#efd0a4':'#d5ae82',2);pxEllipse(c,0,0,5,3,'#493a33',1);
+ if(n.markings==='freckled snout'){
+  for(const dx of [-8,-5,5,8])rect(c,dx,2+(Math.abs(dx)===8?1:0),1,1,'#80533d');
+ }
  rect(c,-1,3,2,3,'#60443b');rect(c,-3,6,6,2,'#60443b');
  if(pose==='eat'){rect(c,-3,4,7,4,'#3b302c');rect(c,2,3,4,3,'#bb6072')}
  if(pose==='vape'){rect(c,-2,7,5,4,'#3d332d');rect(c,11,7,4,13,'#83979f');rect(c,12,8,2,3,'#d5d4cf')}
  // Shoulder fur patches and tiny scarfs.
- rect(c,-12,11,24,3,n.scarf||'#e0b66f');rect(c,6,14,4,7,n.scarf||'#e0b66f');
+ if(n.accessory!=='none'){
+  rect(c,-12,11,24,3,n.scarf||'#e0b66f');rect(c,6,14,4,7,n.scarf||'#e0b66f');
+ }
  if(pose==='proud'){rect(c,-4,-30,8,4,'#edbf77');rect(c,-2,-35,4,5,'#edbf77')}
  if(pose==='play'||pose==='wrestle') {pxEllipse(c,-17,7,7,7,fur,2);pxEllipse(c,17,8,7,7,fur,2)}
  c.restore();
 }
 bear=function(c,x,y,scale,n,t=0){newBear(c,x,y,scale,n,t)};
+function cubAppearance(avatar={},activity='idle'){
+ return {
+  skin:avatar.coat||'#a9764c',ear:avatar.ears||'#714734',age:11,activity,
+  scarf:avatar.accessory==='red ribbon'?'#bc6c62':avatar.accessory==='blue bandana'?'#6e9cb6':'#d4af66',
+  accessory:avatar.accessory,markings:avatar.markings,eyes:avatar.eyes,eyeShape:avatar.eyeShape
+ };
+}
 // Generic small icons share a consistent pixel grid and 4-tone palette with baseline art.
 drawItem=function(canvas,id){if(!EXTRA_ITEMS[id])return oldDrawItem(canvas,id);
  const c=canvas.getContext('2d');c.clearRect(0,0,24,24);c.imageSmoothingEnabled=false;
