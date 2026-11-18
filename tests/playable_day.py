@@ -77,6 +77,7 @@ def day_replay(page):
     assert state(page)["inv"] == after["inv"]
     assert state(page)["trades"] == after["trades"]
     page.keyboard.press("Escape")
+    expect(page.locator("#marketStatus")).to_contain_text("LIVE")
     travel(page, "trail")
     click_world(page,640,380)
     page.get_by_role("button",name="Let them see you").click()

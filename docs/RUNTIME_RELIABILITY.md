@@ -30,8 +30,8 @@ Measured UTF-8 bytes with LF line endings over production template/layers/shared
 
 | Measure | Baseline | Cleanup |
 | --- | ---: | ---: |
-| Maintained production inputs | 379,643 B | 335,191 B |
-| Generated offline game | 379,953 B | 335,645 B |
+| Maintained production inputs | 379,643 B | 335,250 B |
+| Generated offline game | 379,953 B | 335,704 B |
 | Function-expression assignments | 89 | 52 |
 | Names assigned to a function expression multiple times | 19 | 9 |
 | Canvas click handlers | 2 | 1 |

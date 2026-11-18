@@ -246,6 +246,7 @@ function openWoodlandTrade(){
 }
 const dayClosePanel=v5ClosePanel;
 v5ClosePanel=function(){
+ const endedTrade=!!tradeSession;
  if(tradeSession){
   paused=tradeSession.wasPaused;tradeSession=null;
   tradeStatus.hidden=true;
@@ -254,6 +255,7 @@ v5ClosePanel=function(){
   document.body.classList.remove('woodland-barter');
  }
  dayClosePanel();
+ if(endedTrade)render();
 };
 document.querySelector('.v5PanelClose').onclick=()=>v5ClosePanel();
 window.addEventListener('keydown',event=>{
