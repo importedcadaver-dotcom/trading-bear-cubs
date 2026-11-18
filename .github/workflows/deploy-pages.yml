@@ -6,7 +6,7 @@ on:
     paths:
       - "index.html"
       - "src/runtime/**"
-      - "src/lib/barter-rules.mjs"
+      - "src/lib/**"
       - "scripts/build_standalone.py"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:

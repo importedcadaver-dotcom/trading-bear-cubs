@@ -2,7 +2,7 @@
 
 **A playable, offline-first browser game about a young brown bear cub who owns a woodland trading post.** Other cubs have independent wants, memories, families, possessions, and their own trading lives.
 
-> Project owner: `importedcadaver-dotcom` · Current playable build: **v5.2.3** · Status: **active private-game development / unfinished systems**
+> Project owner: `importedcadaver-dotcom` · Release metadata is in [VERSION](VERSION) · Status: **active private-game development / unfinished systems**
 >
 > **Content warning:** Fictional underage animal characters, substance use/addiction, contraband, coercion, starvation, injury and death can occur. These are game systems with consequences, not real-world instructions.
 
@@ -12,14 +12,14 @@
 2. Open **[`index.html`](index.html)** in Chrome or Edge.
 3. Choose **New Game** or **Continue**. No account, install, server, or payment required.
 
-GitHub Pages is enabled and the [deployment workflow](.github/workflows/deploy-pages.yml) **succeeded on its second attempt**. GitHub does not execute arbitrary HTML from its source-file viewer, so use the playable website instead:
+The [deployment workflow](.github/workflows/deploy-pages.yml) publishes the game to GitHub Pages after verification. To play in a browser without downloading, use:
 **https://importedcadaver-dotcom.github.io/trading-bear-cubs/** (site updates only after the passing gameplay-test deployment).
 
 ## 📁 Project layout
 
 | Location | What it contains |
 |---|---|
-| [`index.html`](index.html) | Current playable v5.1 standalone game |
+| [`index.html`](index.html) | Generated offline game for this checkout |
 | [`versions/v1/`](versions/v1/) | Original prototype HTML |
 | [`versions/v2/`](versions/v2/) | v2 playable HTML |
 | [`versions/v3/`](versions/v3/) | v3 playable HTML |
@@ -36,16 +36,16 @@ GitHub Pages is enabled and the [deployment workflow](.github/workflows/deploy-p
 | [`archives/`](archives/) | Previously committed reconstructed ZIP snapshots; new generated archives and screenshots are provided as downloadable [Actions run artifacts](../../actions/workflows/build-downloads.yml), not pushed into protected `main` |
 
 
-## Maintained source and offline build (v5.2.1)
+## Maintained source and offline build
 
-The deployed `index.html` is a **generated standalone HTML build** and still works without installing anything. Edit the smaller files in [`src/runtime/layers/`](src/runtime/layers/) and [`src/lib/barter-rules.mjs`](src/lib/barter-rules.mjs), then run:
+The deployed `index.html` is a **generated standalone HTML build** and still works without installing anything. Its inputs are listed in [`scripts/build_standalone.py`](scripts/build_standalone.py). Edit the template, [runtime layers](src/runtime/layers/), or [shared gameplay and save modules](src/lib/), then run:
 
 ```bash
 python scripts/build_standalone.py
 python scripts/build_standalone.py --check
 ```
 
-GitHub Actions refuses to deploy if the generated HTML doesn't match its source. Vitest and the actual game now share the authoritative `isNullBarter` rule. The runtime still has a single legacy closure split into source layers; deeper modularization remains a tracked task.
+GitHub Actions checks that the generated HTML matches its source. The offline game and Vitest use the same barter, inventory, collision and migration rules. See the [runtime architecture and audit](docs/RUNTIME_RELIABILITY.md) for ownership and remaining compatibility paths.
 
 ## Development and automated QA
 

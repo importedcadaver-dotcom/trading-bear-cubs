@@ -30,8 +30,6 @@ jobs:
           node-version: '22'
       - name: Install JavaScript dev dependencies
         run: npm ci --no-fund
-      - name: Audit npm dependencies (high severity blocks deployment)
-        run: npm audit --audit-level=high
       - name: Run Vitest economy unit tests and Vite static build
         run: |
           npm run test
@@ -54,6 +52,9 @@ jobs:
         run: python tests/playable_day.py
       - name: Test tutorial accessibility and mobile target sizing
         run: python tests/accessibility_v522.py
+      - name: Audit npm dependencies (high severity fails the required check)
+        if: always()
+        run: npm audit --audit-level=high
       - name: Upload screenshot and interaction trace
         if: always()
         uses: actions/upload-artifact@v7
