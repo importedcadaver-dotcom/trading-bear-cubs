@@ -113,7 +113,7 @@ function settings(){openModal('Little post settings',`<p>Your woodland adventure
 function switchTab(tab){activeTab=tab;document.querySelectorAll('.tab').forEach(b=>{let on=b.dataset.tab===tab;b.classList.toggle('active',on);b.setAttribute('aria-selected',String(on))});document.querySelectorAll('.tabView').forEach(v=>v.classList.toggle('active',v.id==='tab-'+tab));render()}
 function h(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderTradingCore(){
- $('dayNum').textContent=String(state.day).padStart(2,'0');$('repNum').textContent=state.rep+' ✦';$('dealNum').textContent=state.trades;
+ $('dealNum').textContent=state.trades;
  $('tableLevel').textContent=['TINY STALL','SWEET LITTLE SHOP','RESPECTABLE POST','GRANDEST LITTLE POST'][state.upgrades.length]+' · LVL '+(state.upgrades.length+1);
  $('marketStatus').textContent=paused?'PAUSED • THE CUBS ARE WAITING':'LIVE • THE CLEARING IS BUSY';$('pauseBtn').textContent=paused?'▶ RESUME':'Ⅱ PAUSE';$('weatherStamp').textContent=state.weather==='rainy'?'☂ RAINY AFTERNOON':state.event==='Blue moon'?'☾ THE BLUE MOON RUMOR':'☀ SUNLIT CLEARING';
  renderTrade();if(activeTab==='craft')renderCraft();if(activeTab==='journal')renderJournal();drawScene();}
