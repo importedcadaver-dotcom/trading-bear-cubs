@@ -17,3 +17,12 @@ export function canPay(inv,cost){
 export function spend(inv,cost){
   for(const [key,n] of Object.entries(cost))add(inv,key,-n);
 }
+
+export function exchange(first, second, giving, taking) {
+  if (!canPay(first, giving) || !canPay(second, taking)) return false;
+  spend(first, giving);
+  spend(second, taking);
+  for (const [item, count] of Object.entries(giving)) add(second, item, count);
+  for (const [item, count] of Object.entries(taking)) add(first, item, count);
+  return true;
+}

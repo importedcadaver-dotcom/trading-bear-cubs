@@ -51,7 +51,7 @@ function v53Amenity(n){
  if(o)return {kind:pref,target:[o[1],o[2]+26]};
  return null;
 }
-function v53NpcFrame(dT){
+function advanceScheduledActors(dT){
  if(!state?.npcs)return;
  for(const n of state.npcs){
    if(!n.worldPos||!WORLD[n.location])continue;
@@ -77,9 +77,8 @@ function v53NpcFrame(dT){
    }
  }
 }
-const v53PreviousDraw=drawScene;
-drawScene=function(){
- v53PreviousDraw();
+function drawAmenityActivity(){
+
  if(!state||mapOpen)return;
  for(const n of state.npcs){
    if(n.location!==state.location||n.travelPlan?.stage==='between')continue;
@@ -100,3 +99,22 @@ drawScene=function(){
 };
 
 
+
+let idleFrameBudget=0, idleFrameNumber=0;
+function advanceIdleActors(dt){
+ idleFrameBudget+=dt;
+ if(idleFrameBudget<.075)return;
+ idleFrameBudget-=.075;
+ const t=++idleFrameNumber;
+ for(const n of state.npcs){
+  if(n.location!==state.location||n.travelPlan||n.physicalIntent||n.meetPlan)continue;
+  const p=n.worldPos;
+  if(!p)continue;
+  const goal=n.worldTarget||p.slice();
+  if(Math.hypot(goal[0]-p[0],goal[1]-p[1])<4&&Math.sin(t/29+n.age)>.97){
+   n.worldTarget=[clamp(p[0]+Math.sin(t+n.age)*50,74,699),clamp(p[1]+Math.cos(t+n.age)*22,205,370)];
+  }
+  p[0]+=(goal[0]-p[0])*.09;
+  p[1]+=(goal[1]-p[1])*.09;
+ }
+}

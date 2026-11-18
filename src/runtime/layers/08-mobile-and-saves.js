@@ -56,7 +56,7 @@ function v52PickSave(){
    if(chosen.size>4*1024*1024)throw Error('The selected file is too large.');
    const imported=JSON.parse(await chosen.text());
    v512ImportSave(imported);
-   v4ShowMenu();
+   v5ShowMenu();
    notify('Save imported. Your previous progress is backed up.');
   }catch(e){notify('Cannot import save: '+e.message);}
  };
@@ -76,7 +76,7 @@ v4MenuSettings=function(){
  $('v52Export').onclick=v52DownloadSave;
  $('v52Import').onclick=v52PickSave;
  const backup=localStorage.getItem(V512_BACKUP);
- if(backup){const btn=document.createElement('button');btn.className='v4Primary';btn.textContent='↶ RESTORE PRE-IMPORT BACKUP';btn.style.cssText='min-height:48px;margin-top:8px';btn.onclick=()=>openModal('RESTORE PREVIOUS SAVE?','<p>Restore the most recent pre-import save? Your current game will be backed up before it is replaced.</p>',[{text:'CANCEL',action:()=>v4MenuSettings()},{text:'RESTORE',action:()=>{if(v512RestorePreImportBackup())v4ShowMenu();}}]);box.appendChild(btn);}
+ if(backup){const btn=document.createElement('button');btn.className='v4Primary';btn.textContent='↶ RESTORE PRE-IMPORT BACKUP';btn.style.cssText='min-height:48px;margin-top:8px';btn.onclick=()=>openModal('RESTORE PREVIOUS SAVE?','<p>Restore the most recent pre-import save? Your current game will be backed up before it is replaced.</p>',[{text:'CANCEL',action:()=>v4MenuSettings()},{text:'RESTORE',action:()=>{if(v512RestorePreImportBackup())v5ShowMenu();}}]);box.appendChild(btn);}
 };
 
 // Deterministic QA entry points do not run unless a developer explicitly
@@ -137,13 +137,11 @@ world.tabIndex=0;
 world.setAttribute('role','img');
 world.setAttribute('aria-label','Playable woodland scene. Use W A S D or arrow keys to move; E to interact, M for map, I for inventory.');
 world.setAttribute('aria-keyshortcuts','W A S D E M I');
-const v522OriginalOpenModal=openModal;
-const v522OriginalCloseModal=closeModal;
 let v522LastFocus=null;
-openModal=function(...args){
+function openModal(...args){
  const wasOpen=$('modalBackdrop').classList.contains('open');
  if(!wasOpen)v522LastFocus=document.activeElement;
- v522OriginalOpenModal(...args);
+ mountModal(...args);
  const modal=$('modal');
  modal.setAttribute('aria-modal','true');
  modal.setAttribute('role','dialog');
@@ -153,8 +151,8 @@ openModal=function(...args){
   (first||modal).focus();
  });
 };
-closeModal=function(){
- v522OriginalCloseModal();
+function closeModal(){
+ $('modalBackdrop').classList.remove('open','woodland-talk');
  if(v522LastFocus?.isConnected&&typeof v522LastFocus.focus==='function')v522LastFocus.focus();
  v522LastFocus=null;
 };
@@ -170,9 +168,8 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();first.focus();
  }
 });
-const v522PreviousRender=render;
-render=function(){
- v522PreviousRender();
+function renderSceneAccessibility(){
+
  if(state?.location&&WORLD[state.location])world.setAttribute('aria-label',
    'Woodland scene: '+WORLD[state.location].name+'. Use W A S D to move, E to interact, M to open the map, and I for inventory.');
 };
@@ -182,5 +179,3 @@ window.LittleTradingPost={...window.LittleTradingPost,
   if(!window.__LTP_TEST__||!Number.isInteger(step)||step<0||step>7)return false;
   state.tutorial={enabled:true,step,completed:false};render();save();return true;
  }};
-load();drawPortrait($('logoBear'),{skin:'#a9764c',ear:'#734b36',scarf:'#c77d58'});render();requestAnimationFrame(animate);opening();
-})();
