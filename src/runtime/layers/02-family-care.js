@@ -109,8 +109,7 @@ const phaseNames=['MORNING','AFTERNOON','EVENING','NIGHT'];
 const phaseCosts=[3,4,3,2];
 const maxV=100;
 const clamp=(v,a=0,b=100)=>Math.min(b,Math.max(a,v));
-const oldFresh=fresh,oldLoad=load,oldRenderJournal=renderJournal,oldNpcTrade=npcTrade,
- oldDrawItem=drawItem,oldBear=bear,
+const oldRenderJournal=renderJournal,oldDrawItem=drawItem,
  oldBuildCraft=buildCraft,oldEvent=event;
 function ensureV2(s){
  if(s.v2===2)return s;
@@ -125,8 +124,6 @@ function ensureV2(s){
  s.log.unshift({s:'NEW: Mama, food, friends, construction and day/night are now part of your story.',d:s.day});
  return s;
 }
-fresh=function(){return ensureV2(oldFresh())};
-load=function(){oldLoad();ensureV2(state);sanitize();};
 function sanitize(){
  for(const group of [state.inv,state.hidden,state.stored,state.displayed,...state.npcs.map(n=>n.inv)]){
    for(const [k,v] of Object.entries(group)){if(!items[k]||!Number.isSafeInteger(v)||v<0)delete group[k];}
@@ -142,24 +139,24 @@ const extStyle=document.createElement('style');extStyle.textContent=`
 :root{--night:#132a37}
 .masthead{border-bottom:2px solid #d3c6a3;padding-bottom:13px}
 .tab{padding:12px 3px;font-size:10px;min-width:0}.tabs{flex-wrap:wrap}.tabs .tab{flex:1 1 24%;white-space:nowrap}
-.vitals{background:#fef8e5;border:2px solid #b5c6a6;margin:12px 0;padding:11px 13px;box-shadow:3px 3px 0 #c9c4a9}
-.vitalsHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:7px;font:900 12px 'Courier New',monospace;color:#355a42}
-.vitalGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.vital{text-align:center;min-width:0}.vital b{font:900 10px 'Courier New',monospace;text-transform:uppercase;display:block}.vital .bar{height:8px;background:#d9d5c4;box-shadow:inset 0 1px 2px #abb3a5;margin:5px 0}.vital .bar div{height:100%;background:#7da178}.vital em{font:800 10px monospace;color:#53694e;font-style:normal}
-.phaseRibbon{display:flex;gap:6px;align-items:center}.phaseDot{font-size:11px;letter-spacing:1px}.phaseDot.on{color:#db9758}
+
+
+
+
 .itemActionHead{display:flex;align-items:center;gap:12px;padding:10px;background:#ecf0df;border:1px solid #c7cdb7}.itemActionHead canvas{width:52px;height:52px;image-rendering:pixelated}.itemActionHead b{display:block;font:900 14px 'Courier New',monospace}.itemActionHead small{font-size:11px;color:#6f806e}
 .actionGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}.miniBtn{border:2px solid #73906d;background:#ecf0db;padding:9px 7px;text-align:left;font:800 11px 'Courier New',monospace;color:#3b6049;box-shadow:2px 2px 0 #d1cab1}.miniBtn.gold{background:#e8d09b}.miniBtn:disabled{opacity:.4}.miniBtn:active{transform:translate(1px,1px)}
-.bagItem{cursor:pointer}.bagItem.selected{background:#eed4a9;border:2px solid #b97a50}
+
 .statusTag{display:inline-block;background:#e4eacb;border:1px solid #b9c79d;padding:4px 6px;font:700 10px 'Courier New',monospace;margin:3px 5px 3px 0}
 .marketOptions{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.policyOption{border:2px solid #d0c4a5;background:#f4eed8;padding:9px 6px;text-align:left;font-size:11px;color:#4b634a}.policyOption b{display:block;font:900 12px 'Courier New',monospace}.policyOption.active{border-color:#537f5f;background:#d6e6cb}
 .peopleCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.personCard{padding:8px;border:1px solid #d1c5ac;background:#f9f0dd}.personCard b{font:900 12px 'Courier New',monospace;color:#2e533e}.personCard small{display:block;color:#77866d;margin-top:3px}.personCard button{margin-top:6px;width:100%}
 .tinyNote{font:11px/1.5 'Trebuchet MS',sans-serif;color:#657a62}.upgradeTiles{display:grid;grid-template-columns:1fr 1fr;gap:7px}.upgradeTiles .recipe{margin:0;min-height:95px}
-#inventoryActions{margin-top:10px}#inventoryActions.empty{display:none}
+
 #tab-life,#tab-mama,#tab-post{max-height:780px;overflow:auto}
 .phaseWorldNote{background:#284e3e;color:#fff0c7;padding:7px 12px;font-size:12px;font-weight:bold}
 .worldFrame.night canvas{filter:brightness(.68) saturate(.75)}.worldFrame.evening canvas{filter:sepia(.15) brightness(.91)}
 .worldFrame.night .worldStamp{background:#152c3ecb;color:#f7e4b4;border-color:#7994ab}
-#noticeLine{font:11px/1.5 monospace;color:#93724e;margin-top:6px}
-@media(max-width:650px){.vitalGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.vital b{font-size:9px}.actionGrid{grid-template-columns:repeat(2,1fr)}.peopleCards{grid-template-columns:1fr}.tabs .tab{flex:1 1 32%}.marketOptions{grid-template-columns:1fr 1fr}}
+
+@media(max-width:650px){.actionGrid{grid-template-columns:repeat(2,1fr)}.peopleCards{grid-template-columns:1fr}.tabs .tab{flex:1 1 32%}.marketOptions{grid-template-columns:1fr 1fr}}
 `;document.head.appendChild(extStyle);
 const tabBar=document.querySelector('.tabs');
 for(const [id,title] of [['life','♡ CUB LIFE'],['mama','♥ MAMA'],['post','⌂ MY POST']]){
@@ -167,35 +164,13 @@ for(const [id,title] of [['life','♡ CUB LIFE'],['mama','♥ MAMA'],['post','�
  const v=document.createElement('div');v.className='tabView';v.id='tab-'+id;v.setAttribute('role','tabpanel');document.querySelector('.panel').appendChild(v);
  b.onclick=()=>switchTab(id);
 }
-const vit=document.createElement('section');vit.className='vitals';vit.id='vitals';
-const mainGrid=document.querySelector('.mainGrid');document.querySelector('.leftColumn').insertBefore(vit,document.querySelector('.sceneInfo'));
-const invActions=document.createElement('div');invActions.id='inventoryActions';invActions.className='empty';document.querySelector('.inventoryPanel').appendChild(invActions);
 let selectedItem='',specialParticles=[],lastSocial='';
 const amount=(id)=>quantity(state.inv,id);
-const baseCapacity=capacity;capacity=function(){return baseCapacity()+(amount('basket')?6:0)+(state.upgrades.includes('cart')?4:0)};
 function phase(){return state.phase||0}
 function visibleShop(){return phase()===1||phase()===2}
 function setPose(p,secs=1800){state.pose=p;state.poseUntil=Date.now()+secs}
 function callAction(text,fn){try{fn()}catch(e){log('Action could not finish: '+e.message);console.error(e);notify('That action was interrupted.')}}
 function actionCost(energy=4,comfort=0){state.needs.energy=clamp(state.needs.energy-energy);state.needs.comfort=clamp(state.needs.comfort+comfort)}
-function bumpSocial(){
- const a=randomOf(state.npcs),b=randomOf(state.npcs.filter(n=>n.id!==a.id));const pair=(a.relTo[b.id]||0);
- let kind;
- if(phase()===3)kind='sleep';else if(a.temper==='competitive'&&rng()<.45)kind='argue';else kind=randomOf(['wrestle','share','play','chat','gather']);
- a.activity=kind;b.activity=kind;a.memory.unshift(`D${state.day}: ${kind} with ${b.name}`);b.memory.unshift(`D${state.day}: ${kind} with ${a.name}`);
- a.memory=a.memory.slice(0,8);b.memory=b.memory.slice(0,8);
- a.relTo[b.id]=clamp(pair+(kind==='argue'?-1:1),-6,10);b.relTo[a.id]=a.relTo[b.id];
- a.energy=clamp(a.energy-(kind==='wrestle'?8:3));b.energy=clamp(b.energy-3);
- if(kind==='gather'&&count(a.inv)<9){add(a.inv,randomOf(['berry','twig','acorn','leaf']),1);log(`${a.name} picked up materials on a walk with ${b.name}.`)}
- else if(kind==='argue'){log(`${a.name} and ${b.name} bickered about who owns the best market stall.`)}
- else if(kind==='wrestle'){log(`${a.name} and ${b.name} wrestled in the grass. ${a.age}m vs ${b.age}m: ${a.age>b.age?a.name+' held back a bit.':'a playful tumble!'}`)}
- else if(kind==='share'){let good=Object.keys(a.inv).find(id=>items[id]&&items[id].category==='Food'&&quantity(a.inv,id)>0);
-  if(good){add(a.inv,good,-1);add(b.inv,good,1);log(`${a.name} shared ${items[good].name.toLowerCase()} with ${b.name}. Their friendship grew.`)}
-  else log(`${a.name} shared a secret with ${b.name}. Their friendship grew.`)}
- else if(kind==='play'){log(`${a.name} and ${b.name} chased a leaf across the clearing.`)}
- else if(kind==='sleep'){log(`${a.name} and ${b.name} settled down for the night.`)}
- return kind;
-}
 function entry(n){
  if(state.passes[n.id]===state.day)return true;
  const policy=state.policy;
@@ -209,32 +184,6 @@ function entry(n){
  }
  add(n.inv,id,-1);add(state.inv,id,1);state.passes[n.id]=state.day;state.fees++;
  log(`${n.name} paid ${items[id].name.toLowerCase()} to use YOUR market. The fee belongs to you.`);return true;
-}
-// NPC trade must respect post rights, while off-site trades remain possible.
-npcTrade=function(){
- const candidates=[];for(const a of state.npcs){for(const b of state.npcs){if(a.id>=b.id)continue;
- for(const x of Object.keys(a.inv).filter(k=>quantity(a.inv,k)>0))for(const y of Object.keys(b.inv).filter(k=>quantity(b.inv,k)>0&&x!==k)){
-  const scoreA=itemVal(a,y)-itemVal(a,x),scoreB=itemVal(b,x)-itemVal(b,y);
-  if(scoreA>=-1&&scoreB>=-1&&scoreA+scoreB>=2)candidates.push({a,b,x,y,s:scoreA+scoreB});
- }}}
- if(!candidates.length)return false;
- candidates.sort((a,b)=>b.s-a.s);const t=candidates[Math.floor(rng()*Math.min(5,candidates.length))];
- const atPost=visibleShop()&&rng()<.8;
- let here=atPost;
- if(atPost){here=entry(t.a)&&entry(t.b);} // allowed to deal outside even when denied
- add(t.a.inv,t.x,-1);add(t.a.inv,t.y,1);add(t.b.inv,t.y,-1);add(t.b.inv,t.x,1);
- t.a.deals++;t.b.deals++;t.a.activity=t.b.activity='trading';
- log(`${t.a.name} traded ${items[t.x].name.toLowerCase()} for ${t.b.name}'s ${items[t.y].name.toLowerCase()} ${here?'at your market.':'off-site.'}`);
- return true;
-};
-function npcWorldAction(){
- const phaseNow=phase();state.npcs.forEach(n=>{n.location=phaseNow===3?'den':phaseNow===0?'home':phaseNow===2?'home':n.activity==='gather'?'woods':'post';
-  n.energy=clamp(n.energy+(phaseNow===3?3:-.3));});
- if(rng()<.45)bumpSocial();
- if(rng()<(state.upgrades.includes('table')?.72:.56)&&phaseNow!==3)npcTrade();
- if(phaseNow===1&&rng()<.23){const maker=randomOf(state.npcs);if(quantity(maker.inv,'stick')>=2){add(maker.inv,'stick',-2);add(maker.inv,'fish',1);maker.activity='craft';log(`${maker.name} carved a wooden fish without your help.`)}}
- if(state.policy==='treasure'&&phaseNow===1&&rng()<.14){state.rivalPressure=clamp(state.rivalPressure+1,0,100);log(`Moss advertised free tables outside your expensive market. Some visitors went there instead.`)}
- if(phaseNow===1&&rng()<.2){const n=randomOf(state.npcs);const choices=['berry','stick','leaf','twig','clay','acorn'];if(count(n.inv)<11){const id=randomOf(choices);add(n.inv,id,1);log(`${n.name} independently foraged ${items[id].name.toLowerCase()}.`)}}
 }
 function updateNeeds(cost=1){
  state.needs.food=clamp(state.needs.food-2*cost);state.needs.water=clamp(state.needs.water-2.3*cost);
@@ -285,13 +234,13 @@ function bedtime(){
  log('A new morning. The forest has recovered a LITTLE, and your cub needs breakfast.');setPose('sleep',1300);
  save();render();
 }
-newDay=function(manual=true){
+function newDay(manual=true){
  if(!manual){bedtime();return;}
  if(state.phase<3){state.needs.energy=clamp(state.needs.energy-4);updateNeeds(3);log('You waited instead of acting. Time passed and you became hungrier and thirstier.');progressPhase();}
  else{checkMother();bedtime()}
  save();render();
 };
-tick=function(steps=1){
+function tick(steps=1){
  for(let i=0;i<steps;i++){
   state.tick++;state.dailyActions++;state.phaseActs++;
   updateNeeds(1);npcWorldAction();
@@ -328,19 +277,6 @@ function forageZone(id){
  }else log(`You explored ${zones[id].name.toLowerCase()} and found ${items[idItem].name.toLowerCase()}. (${state.pool[id]} finds remain here)`);
  notify('Found: '+items[idItem].name+'!');sound(510);tick();
 }
-function openForage(){
- const z=Object.entries(zones).map(([id,o])=>`<p><b>${o.emoji} ${o.name}</b> — ${o.desc}<br><small>Finds left: ${state.pool[id]} · ${o.cost} energy</small></p>`).join('');
- openModal('Where will your paws go?',`<p>Each trip takes time, energy and resources from the forest. Streams and logs grow back gradually, not instantly.</p>${z}`,
- [...Object.entries(zones).map(([id,o])=>({text:o.name+(state.pool[id]?' ('+state.pool[id]+')':' · empty'),secondary:!state.pool[id],action:()=>{closeModal();forageZone(id)}})),{text:'CANCEL',secondary:true,action:closeModal}]);
-}
-forage=function(){openForage()};
-listen=function(){
- const n=npc();if(state.gossip>=2)return notify('Your cub has heard enough gossip today.');
- if(!canAct(3))return;
- state.gossip++;n.discovered=true;actionCost(3,2);
- const msg=`${n.name} confided: ${n.backstory} (${n.age} months old · ${n.family})`;
- log(msg);tradeResult(msg,true);notify('You learned a little secret about '+n.name);setPose('chat');tick();
-};
 itemVal=function(n,id){
  let v=base[id]||3;v+=quantity(n.inv,id)>0?-Math.min(2,quantity(n.inv,id)):1;
  if(id===n.love)v+=8;if(id===n.other)v+=3;if(id===n.craving&&id!==n.love)v+=4;
@@ -442,23 +378,6 @@ function useInventoryItem(id,what){
 }
 function retrieveItem(where,id){if(quantity(state[where],id)<1)return; if(count(state.inv)>=capacity())return notify('Your backpack is full.');
  add(state[where],id,-1);add(state.inv,id,1);log(`You retrieved ${items[id].name.toLowerCase()} from ${where}.`);notify('Retrieved '+items[id].name);tick();}
-function showItemActions(id){
- selectedItem=id;const a=items[id];if(!a||!amount(id)){selectedItem='';renderItemActions();return}
- renderItemActions();
-}
-function renderItemActions(){const pane=$('inventoryActions');if(!selectedItem||!amount(selectedItem)){pane.className='empty';pane.innerHTML='';return;}
- const id=selectedItem,a=items[id];pane.className='';pane.innerHTML='';
- const head=document.createElement('div');head.className='itemActionHead';const cv=document.createElement('canvas');cv.width=cv.height=24;drawItem(cv,id);
- const bl=document.createElement('div');bl.innerHTML=`<b>${h(a.name)} ×${amount(id)}</b><small>${h(a.desc)}</small>`;head.append(cv,bl);pane.appendChild(head);
- const list=[['examine','Inspect'],['trade','Offer in trade'],['gift','Gift to selected cub'],['mama','Show to Mama'],['store','Store safely'],['hide','Hide from Mama'],['display','Display proudly'],['equip','Carry']];
- if(id==='water'||a.usage==='food')list.unshift(['eat',id==='water'?'Drink':'Eat']);
- if(a.category==='Toy'||['stick','ball','boat','crown','fish','drum','dice','mouse'].includes(id))list.push(['play','Play with cub']);
- if(['Material','Tool'].includes(a.category))list.push(['craft','Craft with this']);
- if(['Material','Tool'].includes(a.category))list.push(['build','Build at your post']);
- if(id==='vape')list.push(['vape','Use vape (unsafe)']);
- const grid=document.createElement('div');grid.className='actionGrid';
- for(const [action,label] of list){const b=document.createElement('button');b.className='miniBtn'+(action==='eat'?' gold':'');b.textContent=label;b.onclick=()=>{itemAction(id,action);render();};grid.appendChild(b)}pane.appendChild(grid);
-}
 function reactToSocial(type){
  const n=npc();if(phase()===3&&type!=='comfort')return notify(n.name+' is sleeping. Meet again in the day.');
  if(!canAct(4))return;
@@ -496,30 +415,12 @@ function mamaAction(type){
 function switchPolicy(p){state.policy=p;log(`New trading-post rule: ${p==='free'?'free access':p==='berry'?'every cub pays a berry or acorn':p==='treasure'?'every cub pays a valuable little treasure':'friends-only access'}.`);notify('Your market rules have changed.');tick();}
 function renderV2(){
  const n=state.needs,m=state.mama;
- $('vitals').innerHTML=`<div class="vitalsHead"><span>♡ YOUR LITTLE BEAR · 11 MONTHS OLD</span><span class="phaseRibbon">${phaseNames.map((p,i)=>`<span class="phaseDot${i===phase()?' on':''}">${i===phase()?'◆':'◇'} ${p.slice(0,3)}</span>`).join('')}</span></div><div class="vitalGrid">${[['food','Hunger'],['water','Water'],['energy','Energy'],['comfort','Cuddles'],['health','Health']].map(([id,name])=>`<div class="vital"><b>${name}</b><div class="bar"><div style="width:${n[id]}%;background:${n[id]<25?'#bb7259':id==='health'?'#a7b47a':'#7ca67e'}"></div></div><em>${Math.round(n[id])}</em></div>`).join('')}</div><div id="noticeLine">${state.phaseActs}/${phaseCosts[phase()]} activities this phase · Forest weather: ${state.weather} · ${phase()===3?'Night discoveries and Mama check-ins':'Other cubs live on their own schedules'}</div>`;
- $('nextBtn').querySelector('b').textContent=phase()===3?'☾ SLEEP UNTIL MORNING':'⏭ WAIT FOR '+phaseNames[phase()+1];
- $('nextBtn').querySelector('small').textContent='Skipping time still costs food and water';
- $('forageCount').textContent=Math.max(0,3+(state.upgrades.includes('cart')?1:0)-state.foraged)+' TRIPS · LIMITED FINDS';
- $('forageBtn').disabled=state.foraged>=3+(state.upgrades.includes('cart')?1:0)||count(state.inv)>=capacity()||(phase()===3&&!amount('lantern')&&!state.upgrades.includes('lanterns'));
  $('weatherStamp').textContent=phase()===3?'☾ QUIET WOODLAND NIGHT':phase()===2?'✦ GOLDEN EVENING':phase()===0?'☀ DEWY MORNING':'☀ BUSTLING AFTERNOON';
- $('timeStamp').textContent=phaseNames[phase()]+' · '+state.event.toUpperCase();
  const worldFrame=document.querySelector('.worldFrame');worldFrame.classList.toggle('night',phase()===3);worldFrame.classList.toggle('evening',phase()===2);
  $('marketStatus').textContent=paused?'PAUSED • CUB LIFE IS STILL':'LIVE • '+(phase()===3?'THE CUBS ARE ASLEEP':phase()===0?'MORNING PREPARATIONS':'YOUR MARKET IS IN BUSINESS');
- $('activeCubs').textContent=phase()===3?'0':state.npcs.filter(p=>p.location==='post').length;
- $('currentWish').innerHTML=`<b>Your rules:</b> ${h(state.policy.toUpperCase())} · <b>Stall fees collected:</b> ${state.fees} · <b>Forest:</b> ${Object.values(state.pool).reduce((a,b)=>a+b,0)} finds available across four areas.`;
- $('upgradeCount').textContent=state.upgrades.length+'/'+upgrades.length+' structures';
- $('goalNum').textContent=state.rep+' STARS';
- $('progressFill').style.width=Math.min(100,state.rep/25*100)+'%';
- $('progressMessage').textContent=state.victory?'The little market is a woodland landmark!':'Become a landmark: 25 reputation · 12 trades · 6 structures.';
  $('npcTitle').textContent=npc().title+' · '+npc().age+' months';
  $('npcQuote').textContent='“'+npc().quote+'”  '+npc().family+'.';
  $('tableLevel').textContent=state.upgrades.length+' structures · YOUR PROPERTY';
- $('forageBtn').querySelector('small').textContent='Pick a real gathering location';
- const slots=$('bagGrid').querySelectorAll('.bagItem');slots.forEach(el=>{
-    const name=el.title.split(' ×')[0];const id=Object.keys(items).find(k=>items[k].name===name);
-    if(!id)return;el.classList.toggle('selected',selectedItem===id);el.onclick=()=>showItemActions(id);
-    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showItemActions(id)}};
- });renderItemActions();
  $('tab-life').innerHTML=`<div class="sectionHead"><h2>♡ Your woodland friends</h2><span class="micro">SIX REAL CUBS</span></div><p class="tinyNote">Pick a cub above, then play with them here. Siblings, sizes, ages and grudges affect how each behaves.</p><div class="traderHero" style="margin-top:8px"><div><b>${h(npc().name)}</b> · ${npc().age} months old<br><small>${h(npc().family)} · ${h(npc().temper)}<br>Friendship: ${npc().rel}/10 · Activity: ${h(npc().activity)}</small></div></div><div class="actionGrid" id="socialButtons"></div><h3 class="subhead">Family tree and friendships</h3><div class="peopleCards">${state.npcs.map(o=>`<div class="personCard"><b>${h(o.name)} · ${o.age} months</b><small>${h(o.family)}<br>Likes ${h(items[o.love].name.toLowerCase())} · ${h(o.activity)} · friendship ${o.rel}/10</small><button class="miniBtn" data-talk="${o.id}">VISIT ${h(o.name.toUpperCase())}</button></div>`).join('')}</div>`;
  const social=[['play','Play'],['wrestle','Wrestle'],['chase','Chase'],['secret','Share secret'],['share','Share snack'],['comfort','Comfort'],['help','Help with task'],['apologize','Apologize'],['argue','Argue']];
  for(const [action,label]of social){const b=document.createElement('button');b.className='miniBtn';b.textContent=label;b.onclick=()=>reactToSocial(action);$('socialButtons').appendChild(b)}
@@ -652,19 +553,7 @@ renderJournal=function(){oldRenderJournal();const hint=$('tab-journal').querySel
   document.querySelectorAll('#journalNotes .noteCard p').forEach((el,i)=>{const n=state.npcs[i];if(n.discovered)el.textContent=n.backstory||'A very personal treasure.';});
 };
 // User click / keyboard transitions.
-$('forageBtn').onclick=openForage;
-$('nextBtn').onclick=()=>newDay(true);
-$('gossipBtn').onclick=listen;
 $('tradeBtn').onclick=negotiate;
 $('helpBtn').onclick=()=>openModal('Your cub, your trading post',`<p><b>Morning:</b> eat, see Mama, gather. <b>Afternoon:</b> trade, construct, play. <b>Evening:</b> close up and show Mama treasures. <b>Night:</b> hide items, sleep or explore safely with lighting.</p><p><b>Inventory:</b> click an item for real actions (eat, hide, display, gift, play). <b>Cub Life:</b> socialize and discover sibling relationships. <b>Mama:</b> ask for food, cuddle, confess or rest. <b>My Post:</b> choose stall-access fees, inspect storage and buildings. <b>Make & Build:</b> craft and expand your clearing.</p><p><b>Economy:</b> every cub has preferences, inventories, age, memories and relationships. The forest has limited goods that regrow gradually. Skipping time consumes food and water.</p><p><b>Artifact warning:</b> the mythical human vape is usable but unsafe and has lasting consequences, not benefits.</p>`,[{text:'BACK TO MY POST',action:closeModal}]);
-// Rebind UI after the original handler assignment runs (the injection is placed immediately before load();).
-// Help event gets replaced by the immediately following original assignment; use microtask after init.
-queueMicrotask(()=>{
- $('forageBtn').onclick=openForage;$('nextBtn').onclick=()=>newDay(true);$('gossipBtn').onclick=listen;$('tradeBtn').onclick=negotiate;
- document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
-});
 // The player is the third member of Fern and Pebble's biological litter (all 11 months old).
 for(const n of NPCS.filter(n=>['fern','pebble'].includes(n.id)))n.family='Your littermate! You, Fern and Pebble are all 11 months old.';
-opening=function(){try{if(localStorage.getItem('little_trading_post_seen_v2'))return}catch(e){}
- openModal('WELCOME BACK, LITTLE TRADER!',`<p>You are an <b>11-month-old baby brown bear</b> with <b>3 berries</b>, <b>1 very nice stick</b>, two littermates, and a trading post of your own.</p><ul><li><b>Click an item</b> in your backpack to EAT, HIDE, GIFT, DISPLAY or USE it.</li><li><b>Four times of day</b> — morning, afternoon, evening and night — contain a small number of meaningful activities.</li><li><b>Explore</b> four gathering areas that gradually run out of finds and replenish overnight.</li><li><b>Cub Life</b> lets you wrestle and socialize; <b>Mama</b> can feed, cuddle and check on you.</li><li><b>My Post</b> gives YOU control of stall fees, access policies, storage and amenities.</li><li><b>Make & Build</b> includes a growing range of useful objects and structures.</li></ul><p>Fern and Pebble are your littermates. Fern has a carved wooden fish; Pebble wants one. Their deal won't wait forever.</p>`,[{text:'OPEN MY REAL TRADING POST',action:()=>{try{localStorage.setItem('little_trading_post_seen_v2','yes')}catch(e){}closeModal()}}]);};
-

@@ -8,7 +8,7 @@ The self-contained production entry point remains root index.html.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-html = (ROOT / "index.html").read_text(encoding="utf-8")
+html = (ROOT / "versions" / "v5" / "index.html").read_text(encoding="utf-8")
 markers = [
     ("v2", "/* LITTLE TRADING POST v2: additive expansion"),
     ("v3", "/* The Little Trading Post v3: additive world-and-agency expansion."),

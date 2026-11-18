@@ -1,17 +1,11 @@
 /* v5.3 — Autonomous physical encounters. Actual transfers and social results
    resolve only after both bears walk into the same scene and meet in person.
    In-progress intentions and pathing are part of the ordinary saved state. */
-function v54Blocked(loc,x,y){
- if(x<32||x>738||y<133||y>411)return true;
- if(loc==='den'&&x>399&&x<522&&y>267&&y<311)return true;
- if(loc==='post'&&x>124&&x<276&&y>282&&y<348)return true;
- return false;
-}
 function v54ClearSegment(loc,from,to){
  const dx=to[0]-from[0],dy=to[1]-from[1],distance=Math.hypot(dx,dy);
  for(let i=0,n=Math.max(1,Math.ceil(distance/7));i<=n;i++){
    const t=i/n;
-   if(v54Blocked(loc,from[0]+dx*t,from[1]+dy*t))return false;
+   if(SharedCollisionRules.isBlocked(loc,from[0]+dx*t,from[1]+dy*t))return false;
  }
  return true;
 }
@@ -26,10 +20,10 @@ function v54GridPath(loc,from,target){
  let found=null;
  for(let i=0;i<queue.length&&i<1100;i++){
    const [x,y]=queue[i],k=key(x,y),pt=point(x,y);
-   if(Math.abs(x-tx)+Math.abs(y-ty)<2&&!v54Blocked(loc,...pt)){found=k;break;}
+   if(Math.abs(x-tx)+Math.abs(y-ty)<2&&!SharedCollisionRules.isBlocked(loc,...pt)){found=k;break;}
    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
      const a=x+dx,b=y+dy,z=key(a,b);
-     if(a<0||b<0||a>maxX||b>maxY||seen.has(z)||v54Blocked(loc,...point(a,b)))continue;
+     if(a<0||b<0||a>maxX||b>maxY||seen.has(z)||SharedCollisionRules.isBlocked(loc,...point(a,b)))continue;
      seen.add(z);parents.set(z,k);queue.push([a,b]);
    }
  }
@@ -48,7 +42,7 @@ function v54GridPath(loc,from,target){
    while(end>i+1&&!v54ClearSegment(loc,points[i],points[end]))end--;
    simplified.push(points[end]);i=end;
  }
- if(!v54Blocked(loc,...target)&&v54ClearSegment(loc,simplified.at(-1)||from,target)){
+ if(!SharedCollisionRules.isBlocked(loc,...target)&&v54ClearSegment(loc,simplified.at(-1)||from,target)){
    simplified.push(target.slice());
  }
  return simplified;
@@ -76,7 +70,7 @@ v53AdvanceToward=function(n,target,dT,speed=83){
  if(finished)n.navSteps.shift();
  return n.navSteps.length===0 &&
   (Math.hypot(n.worldPos[0]-target[0],n.worldPos[1]-target[1])<16 ||
-   v54Blocked(loc,...target));
+   SharedCollisionRules.isBlocked(loc,...target));
 };
 function v54Positions(a,b){
  const center=[(a.worldPos[0]+b.worldPos[0])/2,
@@ -86,7 +80,7 @@ function v54Positions(a,b){
  for(const p of options){
   const left=[clamp(p[0]-21,60,700),clamp(p[1],180,386)];
   const right=[clamp(p[0]+21,60,700),clamp(p[1],180,386)];
-  if(!v54Blocked(a.location,...left)&&!v54Blocked(a.location,...right))return [left,right];
+  if(!SharedCollisionRules.isBlocked(a.location,...left)&&!SharedCollisionRules.isBlocked(a.location,...right))return [left,right];
  }
  return null;
 }
@@ -125,7 +119,9 @@ function v54FinishMeeting(a,b,plan){
    if(!quantity(a.inv,x)||!quantity(b.inv,y)){
      v54CancelMeeting(a,b,'postponed after paying the market fee');return;
    }
-   add(a.inv,x,-1);add(b.inv,y,-1);add(a.inv,y,1);add(b.inv,x,1);
+   if(!SharedInventoryRules.exchange(a.inv,b.inv,{[x]:1},{[y]:1})){
+     v54CancelMeeting(a,b,'postponed when goods changed');return;
+   }
    a.deals++;b.deals++;
    v51Flight(x,a.worldPos,b.worldPos,950);
    v51Flight(y,b.worldPos,a.worldPos,1080);
@@ -206,8 +202,7 @@ function v54FrameMeetings(dT){
    }
  }
 }
-const v54PrevFrame=v53NpcFrame;
-v53NpcFrame=function(dT){
+function v53NpcFrame(dT){
  if(!state?.npcs)return;
  v54QueueMouseTrade(dT);
  v54FrameMeetings(dT);
@@ -215,7 +210,8 @@ v53NpcFrame=function(dT){
  const busy=state.npcs.filter(n=>n.meetPlan&&!n.travelPlan);
  const previous=busy.map(n=>n.activity);
  for(const n of busy)n.activity='walk';
- v54PrevFrame(dT);
+ advanceScheduledActors(dT);
+ advanceIdleActors(dT);
  busy.forEach((n,i)=>{if(n.meetPlan)n.activity=previous[i];});
 };
 
@@ -282,7 +278,7 @@ v5OpenConversation=function(n){
    openModal('Fern’s ribbon mouse','<p>“'+h(answer)+'”</p>',[{text:'BACK',action:closeModal}]);
  };
 };
-bumpSocial=function(){
+function bumpSocial(){
  const pairs=[];
  for(const a of state.npcs)for(const b of state.npcs){
    if(a.id<b.id&&a.location===b.location&&!a.travelPlan&&!b.travelPlan&&
@@ -294,7 +290,7 @@ bumpSocial=function(){
    randomOf(['wrestle','chat','play','share','gather']);
  return v54StartMeeting(a,b,kind);
 };
-npcTrade=function(){
+function npcTrade(){
  const choices=[];
  for(const a of state.npcs)for(const b of state.npcs){
    if(a.id>=b.id||a.location!==b.location||a.travelPlan||b.travelPlan||
@@ -362,5 +358,5 @@ window.LittleTradingPost={...window.LittleTradingPost,
   if(!['trade','wrestle','chat','play','share','gather','nap','argue'].includes(kind))return false;
   return v54StartMeeting(a,b,kind,{give,take});
  },
- npcTestBlocked:(loc,x,y)=>window.__LTP_TEST__?v54Blocked(loc,x,y):null
+ npcTestBlocked:(loc,x,y)=>window.__LTP_TEST__?SharedCollisionRules.isBlocked(loc,x,y):null
 };

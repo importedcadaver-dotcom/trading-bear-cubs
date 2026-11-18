@@ -21,8 +21,8 @@ dayStyle.textContent=`
  #woodlandTradeStatus{padding:8px;background:#223f35;color:#fff4cf;font:15px Georgia,serif}
  #tab-history{background:#f4e8c9;color:#483a29;border-left:5px double #a58b52;padding:12px}
  #tab-history .sectionHead{font-family:Georgia,serif}
- #v5EventToast{top:auto;bottom:15px;border:1px solid #e1c58a;background:#223f35;font:15px Georgia,serif}
- body:has(#modalBackdrop.woodland-talk.open) #v5EventToast{bottom:auto;top:12px;max-width:min(340px,85vw)}
+ #toast{top:auto;bottom:15px;border:1px solid #e1c58a;background:#223f35;font:15px Georgia,serif}
+ body:has(#modalBackdrop.woodland-talk.open) #toast{bottom:auto;top:12px;max-width:min(340px,85vw)}
  #modalBackdrop.woodland-talk .v4OptionStack[hidden]{display:none}
 `;
 document.head.append(dayStyle);
@@ -98,10 +98,6 @@ cubChoices.children[1].onclick=()=>{
  state.chosen=id;openWoodlandTrade();
 };
 
-const dayCloseModal=closeModal;
-closeModal=function(){
- dayCloseModal();$('modalBackdrop').classList.remove('woodland-talk');
-};
 const dayOpenConversation=v5OpenConversation;
 function tellDayAdventure(id){
  const adventure=state.dayAdventure;
@@ -422,6 +418,11 @@ interactObject=function(action,spot){
  return dayPreviousObject(action,spot);
 };
 
+function npcWorldAction(){
+ runWoodlandSchedule();
+ v5NPCDependenceSim();
+ v5MaybeSocialEvent();
+}
 function drawScene(){
  worldDrawV3();
  drawMovementScenery();
@@ -438,12 +439,14 @@ function render(){
  renderTradingCore();
  renderCare();
  renderLocation();
- renderTutorial();
  renderDayDetails();
  renderNearbyHelp();
  renderNeeds();
  renderSceneAccessibility();
 }
 
-load();drawPortrait($('logoBear'),cubAppearance(state.avatar));render();requestAnimationFrame(animate);opening();
+$('v3Dev').onclick=()=>showDev();
+$('v3Backpack').onclick=()=>openBackpack();
+$('tradeBtn').onclick=negotiate;
+load();drawPortrait($('logoBear'),cubAppearance(state.avatar));render();requestAnimationFrame(animate);v5ShowMenu();
 })();
